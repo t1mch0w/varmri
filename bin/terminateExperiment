@@ -1,0 +1,642 @@
+#! /usr/bin/env python
+#
+# Copyright (c) 2004-2020 University of Utah and the Flux Group.
+# 
+# {{{EMULAB-LICENSE
+# 
+# This file is part of the Emulab network testbed software.
+# 
+# This file is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at
+# your option) any later version.
+# 
+# This file is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+# License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this file.  If not, see <http://www.gnu.org/licenses/>.
+# 
+# }}}
+# 
+
+#
+# Wrapper to convert select commands into XMLRPC calls to boss. The point
+# is to provide a script interface that is backwards compatable with the
+# pre-rpc API, but not have to maintain that interface beyond this simple
+# conversion.
+#
+import sys
+import pwd
+sys.path.append("/usr/testbed/lib")
+sys.path.append("/local/repository/emulab-xmlrpc")
+import getopt
+import os
+import re
+
+import ssl
+import xmlrpclib
+from emulabclient import *
+
+# When building on the clientside, there are a few minor differences.
+WITH_EMULAB     = 1
+
+##
+# The package version number
+#
+PACKAGE_VERSION = 0.1
+
+# Default server
+XMLRPC_SERVER   = "boss.emulab.net"
+XMLRPC_PORT   = 3069
+
+# User supplied server name/port
+xmlrpc_server   = XMLRPC_SERVER
+xmlrpc_port     = XMLRPC_PORT
+
+# User supplied login ID to use (overrides env variable USER if exists).
+login_id        = os.environ["USER"]
+
+# Debugging output.
+debug           = 0
+impotent        = 0
+
+#
+# For admin people, and for using their devel trees. These options are
+# meaningless unless you are an Emulab developer; they will be rejected
+# at the server most ungraciously.
+#
+if WITH_EMULAB:
+    SERVER_PATH = "/usr/testbed"
+else:
+    SERVER_PATH = "/usr/testbed"
+SERVER_DIR      = "sbin"
+DEVEL_DIR       = "devel"
+develuser       = None
+path            = None
+admin           = 0
+devel           = 0
+needhelp        = 0
+
+try:
+    pw = pwd.getpwuid(os.getuid())
+    pass
+except KeyError:
+    sys.stderr.write("error: unknown user id %d" % os.getuid())
+    sys.exit(2)
+    pass
+
+USER = pw.pw_name
+HOME = pw.pw_dir
+
+CERTIFICATE = os.path.join(HOME, ".ssl", "emulab.pem")
+certificate = CERTIFICATE
+ca_certificate = None
+verify = False
+
+API = {
+    "startExperiment"   : { "func" : "startExperiment",
+                            "help" : "Start a Portal experiment" },
+    "terminateExperiment" : { "func" : "terminateExperiment",
+                              "help" : "Terminate a Portal experiment" },
+    "experimentStatus"  : { "func" : "experimentStatus",
+                            "help" : "Get status for a Portal experiment" },
+    "experimentManifests" : { "func" : "experimentManifests",
+                            "help" : "Get manifests for a Portal experiment" },
+};
+
+#
+# Print the usage statement to stdout.
+#
+def usage():
+    print ("Usage: wrapper [wrapper options] command [command args and opts]");
+    print "";
+    print "Commands:";
+    for key, val in API.items():
+	print ("    %-12s %s." % (key, val["help"]));
+        pass
+    print "(Specify the --help option to specific commands for more help)";
+    wrapperoptions();
+    print
+    print "Example:"
+    print ("  "
+           + "wrapper"
+           + " --server=boss.emulab.net node_admin -n testbed one-node")
+
+def wrapperoptions():
+    print "";
+    print "Wrapper Options:"
+    print "    --help      Display this help message"
+    print "    --server    Set the server hostname"
+    print "    --port      Set the server port"
+    print "    --login     Set the login id (defaults to $USER)"
+    print "    --cert      Specify the path to your testbed SSL certificate"
+    print "    --cacert    The path to the CA certificate to use for server verification"
+    print "    --verify    Enable SSL verification; defaults to disabled"
+    print "    --debug     Turn on semi-useful debugging"
+    return
+
+#
+# Process a single command line
+#
+def do_method(module, method, params):
+    if debug:
+        print module + " " + method + " " + str(params);
+        pass
+    if impotent:
+        return 0;
+
+    if not os.path.exists(certificate):
+        sys.stderr.write("error: certificate not found: %s\n" %
+                         certificate)
+        sys.exit(2)
+        pass
+
+    URI = "https://" + xmlrpc_server + ":" + str(xmlrpc_port) + SERVER_PATH
+
+    ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    try:
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+    except:
+        pass
+    ctx.load_cert_chain(certificate, password = "fxad3311862")
+    if not verify:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    else:
+        if ca_certificate != None:
+            ctx.load_verify_locations(cafile=ca_certificate)
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        pass
+    
+    # Get a handle on the server,
+    server = xmlrpclib.ServerProxy(URI, context=ctx, verbose=debug)
+        
+    # Get a pointer to the function we want to invoke.
+    meth      = getattr(server, module + "." + method)
+    meth_args = [ PACKAGE_VERSION, params ]
+
+    #
+    # Make the call. 
+    #
+    try:
+        response = apply(meth, meth_args)
+        pass
+    except xmlrpclib.Fault, e:
+        print e.faultString
+        return (-1, None)
+
+    #
+    # Parse the Response, which is a Dictionary. See EmulabResponse in the
+    # emulabclient.py module. The XML standard converts classes to a plain
+    # Dictionary, hence the code below. 
+    # 
+    if len(response["output"]):
+        print response["output"],
+        pass
+
+    rval = response["code"]
+
+    #
+    # If the code indicates failure, look for a "value". Use that as the
+    # return value instead of the code. 
+    # 
+    if rval != RESPONSE_SUCCESS:
+        if response["value"]:
+            rval = response["value"]
+            pass
+        pass
+    return (rval, response)
+
+#
+# start a portal experiment
+#
+class startExperiment:
+    def __init__(self, argv=None):
+        self.argv = argv;
+        return
+
+    def apply(self):
+        try:
+            opts, req_args = getopt.getopt(self.argv, "a:p:Ps",
+                                           [ "help", "name=", "duration=",
+                                             "project=", "site=", "start=",
+                                             "bindings=",
+                                             "stop=", "paramset=", "refspec="]);
+            pass
+        except getopt.error, e:
+            print e.args[0]
+            self.usage();
+            return -1;
+        
+        params = {};
+        for opt, val in opts:
+            if opt in ("-h", "--help"):
+                self.usage()
+                return 0
+            elif opt == "-a":
+                params["aggregate"] = val
+                pass
+            elif opt == "-P":
+                params["nopending"] = 1
+                pass
+            elif opt == "-s":
+                params["noemail"] = 1
+                pass
+            elif opt == "--name":
+                params["name"] = val;
+                pass
+            elif opt == "--duration":
+                params["duration"] = val;
+                pass
+            elif opt in ("-p", "--project"):
+                params["proj"] = val;
+                pass
+            elif opt == "--start":
+                params["start"] = val;
+                pass
+            elif opt == "--stop":
+                params["stop"] = val;
+                pass
+            elif opt == "--paramset":
+                params["paramset"] = val;
+                pass
+            elif opt == "--bindings":
+                params["bindings"] = val;
+                pass
+            elif opt == "--refspec":
+                params["refspec"] = val;
+                pass
+            elif opt == "--site":
+                params["site"] = val;
+                pass
+            pass
+
+        # Do this after so --help is seen.
+        if len(req_args) != 1:
+            self.usage();
+            return -1;
+
+        params["profile"] = req_args[0]
+        rval,response = do_method("portal", "startExperiment", params)
+        return rval
+
+    def usage(self):
+        print "Usage: startExperiment <optons> ",
+        "[--site 'site:1=aggregate ...'] <profile>"
+        print "where:"
+        print " -d           - Turn on debugging (run in foreground)"
+        print " -w           - Wait mode (wait for experiment to start)"
+        print " -a urn       - Override default aggregate URN"
+        print " --project    - pid[,gid]: project[,group] for new experiment"
+        print " --project    - pid[,gid]: project[,group] for new experiment"
+        print " --name       - Optional pithy name for experiment"
+        print " --duration   - Number of hours for initial expiration"
+        print " --start      - Schedule experiment to start at (unix) time"
+        print " --stop       - Schedule experiment to stop at (unix) time"
+        print " --paramset   - uid,name of a parameter set to apply"
+        print " --bindings   - json string of bindings to apply to parameters"
+        print " --refspec    - refspec[:hash] of a repo based profile to use"
+        print " --site       - Bind sites used in the profile"
+        print "profile       - Either UUID or pid,name"
+        wrapperoptions();
+        return
+    pass
+
+#
+# Terminate a portal experiment
+#
+class terminateExperiment:
+    def __init__(self, argv=None):
+        self.argv = argv;
+        return
+
+    def apply(self):
+        try:
+            opts, req_args = getopt.getopt(self.argv, "h", [ "help"]);
+            pass
+        except getopt.error, e:
+            print e.args[0]
+            self.usage();
+            return -1;
+        
+        params = {};
+        for opt, val in opts:
+            if opt in ("-h", "--help"):
+                self.usage()
+                return 0
+            pass
+
+        # Do this after so --help is seen.
+        if len(req_args) != 1:
+            self.usage();
+            return -1;
+
+        params["experiment"] = req_args[0]
+        rval,response = do_method("portal", "terminateExperiment", params)
+        return rval
+
+    def usage(self):
+        print "Usage: terminateExperiment <optons> <experiment>"
+        print "where:"
+        print "experiment     - Either UUID or pid,name"
+        wrapperoptions();
+        return
+    pass
+
+#
+# Get status for a portal experiment
+#
+class experimentStatus:
+    def __init__(self, argv=None):
+        self.argv = argv;
+        return
+
+    def apply(self):
+        try:
+            opts, req_args = getopt.getopt(self.argv, "hj", [ "help"]);
+            pass
+        except getopt.error, e:
+            print e.args[0]
+            self.usage();
+            return -1;
+        
+        params = {};
+        for opt, val in opts:
+            if opt in ("-h", "--help"):
+                self.usage()
+                return 0
+            elif opt == "-j":
+                params["asjson"] = 1
+                pass
+            pass
+
+        # Do this after so --help is seen.
+        if len(req_args) != 1:
+            self.usage();
+            return -1;
+
+        params["experiment"] = req_args[0]
+        rval,response = do_method("portal", "experimentStatus", params)
+        return rval
+
+    def usage(self):
+        print "Usage: experimentStatus <optons> <experiment>"
+        print "where:"
+        print " -j            - json string instead of text"
+        print "experiment     - Either UUID or pid,name"
+        wrapperoptions();
+        return
+    pass
+
+#
+# Get manifests for a portal experiment
+#
+class experimentManifests:
+    def __init__(self, argv=None):
+        self.argv = argv;
+        return
+
+    def apply(self):
+        try:
+            opts, req_args = getopt.getopt(self.argv, "h", [ "help"]);
+            pass
+        except getopt.error, e:
+            print e.args[0]
+            self.usage();
+            return -1;
+        
+        params = {};
+        for opt, val in opts:
+            if opt in ("-h", "--help"):
+                self.usage()
+                return 0
+            pass
+
+        # Do this after so --help is seen.
+        if len(req_args) != 1:
+            self.usage();
+            return -1;
+
+        params["experiment"] = req_args[0]
+        rval,response = do_method("portal", "experimentManifests", params)
+        return rval
+
+    def usage(self):
+        print "Usage: experimentManifests <optons> <experiment>"
+        print "where:"
+        print "experiment     - Either UUID or pid,name"
+        wrapperoptions();
+        return
+    pass
+
+#
+# Infer template guid from path
+#
+def infer_guid(path):
+    guid = None
+    vers = None
+    dirs = path.split(os.path.sep)
+    if ((len(dirs) < 6) or
+        (not (("proj" in dirs) and ("templates" in dirs))) or
+        (len(dirs) < (dirs.index("templates") + 2))):
+        return None
+    else:
+        guid = dirs[dirs.index("templates") + 1]
+        vers = dirs[dirs.index("templates") + 2]
+        pass
+    return guid + "/" + vers
+
+#
+# Different version, that crawls up tree looking for .template file.
+# Open up file and get the guid/vers, but also return path of final directory.
+#
+def infer_template():
+    rootino = os.stat("/").st_ino
+    cwd     = os.getcwd()
+    guid    = None
+    vers    = None
+    subdir  = None
+
+    try:
+        while True:
+            if os.access(".template", os.R_OK):
+                fp = open(".template")
+                line = fp.readline()
+                while line:
+                    m = re.search('^GUID:\s*([\w]*)\/([\d]*)$', line)
+                    if m:
+                        guid    = m.group(1)
+                        vers    = m.group(2)
+                        subdir  = os.getcwd()
+                        fp.close();
+                        return (guid + "/" + vers, subdir)
+                    line = fp.readline()
+                    pass
+                fp.close();
+                break
+            if os.stat(".").st_ino == rootino:
+                break
+            os.chdir("..")
+            pass
+        pass
+    except:
+        pass
+        
+    os.chdir(cwd)
+    return (guid, subdir)    
+    pass
+
+#
+# Infer pid and eid
+#
+def infer_pideid(path):
+    pid = None
+    eid = None
+    dirs = path.split(os.path.sep)
+    if ((len(dirs) < 6) or
+        (not (("proj" in dirs) and ("exp" in dirs))) or
+        (len(dirs) < (dirs.index("exp") + 1))):
+        return (None, None)
+    else:
+        pid = dirs[dirs.index("proj") + 1]
+        eid = dirs[dirs.index("proj") + 3]
+        pass
+    return (pid, eid)
+
+#
+# Process program arguments. There are two ways we could be invoked.
+# 1) as the wrapper, with the first required argument the name of the script.
+# 2) as the script, with the name of the script in argv[0].
+# ie:
+# 1) wrapper --server=boss.emulab.net node_admin -n pcXXX
+# 2) node_admin --server=boss.emulab.net -n pcXXX
+#
+# So, just split argv into the first part (all -- args) and everything
+# after that which is passed to the handler for additional getopt parsing.
+#
+wrapper_argv = [];
+wrapper_opts = [ "help", "server=", "port=", "login=", "cert=", "admin",
+                 "devel", "develuser=", "impotent", "debug",
+                 "cacert=", "verify" ]
+
+for arg in sys.argv[1:]:
+    if arg.startswith("--") and arg[2:arg.find("=")+1] in wrapper_opts:
+        wrapper_argv.append(arg);
+        pass
+    else:
+        break
+    pass
+
+try:
+    # Parse the options,
+    opts, req_args =  getopt.getopt(wrapper_argv[0:], "", wrapper_opts)
+    # ... act on them appropriately, and
+    for opt, val in opts:
+        if opt in ("-h", "--help"):
+            usage()
+            sys.exit()
+            pass
+        elif opt == "--server":
+	    xmlrpc_server = val
+            pass
+        elif opt == "--port":
+            xmlrpc_port = int(val)
+            pass
+        elif opt == "--login":
+	    login_id = val
+            pass
+        elif opt == "--cert":
+	    certificate = val
+            pass
+        elif opt == "--cacert":
+            ca_certificate = val
+            pass
+        elif opt == "--verify":
+            verify = True
+            pass
+        elif opt == "--debug":
+	    debug = 1
+            pass
+        elif opt == "--impotent":
+	    impotent = 1
+            pass
+        elif opt == "--admin":
+	    admin = 1
+            pass
+        elif opt == "--devel":
+	    devel = 1
+            pass
+        elif opt == "--develuser":
+	    develuser = val
+            pass
+        pass
+    pass
+except getopt.error, e:
+    print e.args[0]
+    usage()
+    sys.exit(2)
+    pass
+
+# Check some default locations for the Emulab CA certificate, if user
+# requested verification but did not specify a CA cert.
+if verify:
+    if ca_certificate == None:
+        for p in [ SERVER_PATH + "/etc/emulab.pem", "/etc/emulab/emulab.pem" ]:
+            if os.access(p,os.R_OK):
+                ca_certificate = p
+                break
+    if ca_certificate is not None and not os.access(ca_certificate, os.R_OK):
+        print "CA Certificate cannot be accessed: " + ca_certificate
+        sys.exit(-1);
+    pass
+
+if admin:
+    path = SERVER_PATH
+    if devel:
+        path += "/" + DEVEL_DIR
+        if develuser:
+            path += "/" + develuser
+            pass
+        else:
+            path += "/" + login_id
+            pass
+        pass
+    path += "/" + SERVER_DIR
+    pass
+
+#
+# Okay, determine if argv[0] is the name of the handler, or if this was
+# invoked generically (next token after wrapper args is the name of the
+# handler).
+#
+handler      = None;
+command_argv = None;
+
+if API.has_key(os.path.basename(sys.argv[0])):
+    handler      = API[os.path.basename(sys.argv[0])]["func"];
+    command_argv = sys.argv[len(wrapper_argv) + 1:];
+    pass
+elif (len(wrapper_argv) == len(sys.argv) - 1):
+    # No command token was given.
+    usage();
+    sys.exit(-2);
+    pass
+else:
+    token = sys.argv[len(wrapper_argv) + 1];
+
+    if not API.has_key(token):
+        print "Unknown script command, ", token
+        usage();
+        sys.exit(-1);
+        pass
+
+    handler      = API[token]["func"];
+    command_argv = sys.argv[len(wrapper_argv) + 2:];
+    pass
+
+instance = eval(handler + "(argv=command_argv)");
+exitval  = instance.apply();
+sys.exit(exitval);

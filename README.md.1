@@ -1,0 +1,145 @@
+#### Using this profile
+
+This repository based [profile](https://www.cloudlab.us/show-profile.php?uuid=bdca59db-aa6a-11e9-8677-e4434b2381fc)
+sets up a small environment inside a XEN VM,
+that allows you to start, monitor, and terminate Portal based experiments
+from the command line.
+
+The main requirement for using the command line tool is your Portal SSL key
+and certificate, which you can get from the Portal web interface. Click on
+your name in the upper right, and choose the **Download Credentials** menu
+option. You will get a PEM file, with your encrypted key and certificate.
+The passphrase for the key is the same as your Portal login password. Once
+your VM is running, log in and:
+
+	node> mkdir .ssl
+	node> chmod 700 .ssl
+
+Then scp the PEM file to *.ssl/emulab.pem*. Since the key is encrypted, you
+will be asked to provide the passphrase. You can decrypt the key if you
+like and store that in the PEM file. But please, *do not store your key in
+a public repository!*
+
+The next thing you need to do is add the bin directory to your path.
+For *sh*, this would be:
+
+	node> PATH=/local/repository/bin:$PATH
+
+#### Starting an Experiment
+
+The command line program to start an experiment is:
+
+	node> startExperiment 
+	Usage: startExperiment <optons>  where:
+	 -d           - Turn on debugging (run in foreground)
+	 -w           - Wait mode (wait for experiment to start)
+	 -a urn       - Override default aggregate URN
+	 --project    - pid[,gid]: project[,group] for new experiment
+	 --name       - Optional pithy name for experiment
+	 --duration   - Number of hours for initial expiration
+	 --start      - Schedule experiment to start at (unix) time
+	 --stop       - Schedule experiment to stop at (unix) time
+	 --paramset   - uid,name of a parameter set to apply
+     --bindings   - file containting json string of bindings to apply
+	 --refspec    - refspec[:hash] of a repo based profile to use
+	 --site       - Bind sites used in the profile
+	profile       - Either UUID or pid,name
+
+For example, to start the example profile
+[single-pc](https://www.cloudlab.us/p/PortalProfiles/single-pc)
+(which is in the *PortalProfiles* project), in one of your own projects:
+
+	node> startExperiment --project myproject --name myexp PortalProfiles,single-pc
+
+This might take anywhere from 10 seconds to a minute before it
+returns, and once it does, your experiment is being created, which
+might take another few minutes, or a really long time, depending on
+the profile.
+
+#### Parameterized Profiles and Bindings
+
+If the profile you are instantiating is parameterized, it is very handy to
+be able to specify a set of bindings to apply, to override the profile
+defaults. One way to do this is with *Parameter Sets*, which are created
+via the web interface when you instantiate a profile. After the
+parameterize step, you will have the option to save the current bindings so
+that you can reuse them quickly, the next time you instantiate the profile.
+See the web interface for more details.
+
+Alternatively, you can use the **--bindings** argument to provide a json
+string of key/value pairs. For example:
+
+    {
+	    "nodeid" : "pc11",
+        "image"  : "UBUNTU18-64-STD" 
+	}
+	
+Just send this as a string:
+
+	--bindings='{"nodeid" : "pc11",	"image" : "UBUNTU18-64-STD"}'
+
+#### Experiment Status
+
+After you start your experiment, you will want to check its status to
+know when it is *ready* (or failed):
+
+	node> experimentStatus myproject,myexp
+	Status: provisioning
+	node> experimentStatus myproject,myexp
+	Status: ready
+
+Please, **no polling loops with a short timeout**!  Also note that you
+will receive email when your experiment is ready (or fails).
+
+Alternatively, you can request a much more useful JSON result using
+the **-j** option.
+
+	node> experimentStatus -j myproject,myexp
+    {
+	    "status" : "ready",
+	    "uuid"   : "659177fe-de4c-11ea-b1eb-e4434b2381fc",
+	    "execute_status" : {
+			"failed"   : 0,
+			"running"  : 0,
+			"finished" : 1,
+			"total"    : 1
+		},
+	}
+
+#### Experiment Manifests
+
+Once the experiment is ready, you can ask for the manifests(s). 
+
+	node> experimentManifests myproject,myexp
+	
+This will return a json encoded array. The key is the URN of each aggregate
+and the value is the manifest. You will need to json decode the array, and
+then XML decode the manifest.
+	
+#### Terminating an Experiment
+
+To terminate an experiment:
+
+	node> terminateExperiment myproject,myexp
+
+After a little while:
+
+	node> experimentStatus myproject,myexp
+	*** manage_instance:
+	    No such instance myproject,myexp
+
+#### Parameter Sets
+
+*Parameter sets* are named sets of key/value pairs, that define a set of
+selections for a parameterized profile. In the Web UI, parameter sets are
+created using the *Save Parameters* button on the status page of a running
+experiment, or on the history page of a terminated experiment. More
+information can be found in the Web UI, but for now lets say that you have
+a parameter set defined for one of your profiles and that it is called
+*myparamset*. To start an experiment using that profile and parameter set:
+
+	node> startExperiment --project myproject --name myexp --paramset myuid,myparamset PortalProfiles,select-os
+
+Note that *myuid* is your login id, but this argument will likely be
+removed or made optional in a future release.
+
