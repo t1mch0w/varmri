@@ -1,15 +1,22 @@
 #!/bin/bash
 
+name=$1
+testid=$2
+
 #Apply cluster
-./startExperiment --project osu-nfs-test --name test0 --duration 16 --bindings='{"NumberOfNodes":"2"}' osu-nfs-test,c220g1
+echo "Apply the cluster"
+#./startExperiment --project osu-nfs-test --name test$name --duration 16 --bindings="{\"NumberOfNodes\":\"$1\"}" osu-nfs-test,c220g1
+./startExperiment --project osu-nfs-test --name test$name --duration 16 --bindings="{\"NumberOfNodes\":\"5\"}" osu-nfs-test,c220g5
 
 #Check status
+echo "start to check status"
 while true
 do
 sleep 30
-./experimentManifests osu-nfs-test,test0 > xml
-node=$(python get_hostname.py xml)
-if [ ${node} == "Error" ]
+./experimentManifests osu-nfs-test,test$name > test$name.xml
+#Get node
+node=$(python get_hostname.py test$name.xml)
+if [ ${node} = "Error" ]
 then
 continue
 else
@@ -18,8 +25,9 @@ fi
 done
 
 #Init
-ssh ${node} "cd /proj/osu-nfs-test-PG0/cloudlab_var_script;source init.sh"
+echo "start to init"
+ssh ${node} -o StrictHostKeyChecking=no "cd /proj/osu-nfs-test-PG0/cloudlab_var_script;source init.sh"
 
 #Start test
-
-#
+echo "start to test"
+ssh ${node} -o StrictHostKeyChecking=no "cd /proj/osu-nfs-test-PG0/cloudlab_var_script;nohup bash ./start_test.sh ${testid} > test$name.log 2>&1 &"

@@ -6,7 +6,7 @@ xml_info = f.read()
 f.close()
 soup = BeautifulSoup(xml_info, "html.parser")
 login = soup.find_all("login")
-if login is None:
+if login is None or len(login) == 0:
 	print("Error")
 else:
 	print(login[0]["hostname"].replace('\\\"',""))
