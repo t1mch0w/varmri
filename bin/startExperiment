@@ -31,6 +31,7 @@
 import sys
 import pwd
 sys.path.append("/Users/fzhou/Desktop/ops/varcloud/emulab-xmlrpc")
+sys.path.append("/mnt/varcloud/emulab-xmlrpc")
 sys.path.append("/usr/testbed/lib")
 sys.path.append("/local/repository/emulab-xmlrpc")
 import getopt
