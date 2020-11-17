@@ -1,7 +1,7 @@
 #!/bin/bash
 export PYTHONPATH="/mnt/varcloud/emulab-xmlrpc"
 
-avai_nodes=5
+export avai_nodes=29
 test_id=0
 declare -A cluster_info
 

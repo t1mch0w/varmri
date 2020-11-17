@@ -21,11 +21,11 @@ sleep 30
 #Get node status
 status=$(./experimentStatus osu-nfs-test,test${test_id} | grep Status | awk '{print $2}')
 #Add failed processing
-if [ ${status} = "failed" ]
+if [ "${status}" = "failed" ]
 then
 ./terminateExperiment osu-nfs-test,test${test_id}
 return 1
-elif [ ${status} = "ready" ]
+elif [ "${status}" = "ready" ]
 then
 break
 fi
@@ -52,10 +52,10 @@ ssh ${node0} -o StrictHostKeyChecking=no "cd /proj/osu-nfs-test-PG0/cloudlab_var
 #Store results to NFS
 target_dir=/nfs/test${test_id}
 mkdir ${target_dir} 
-mv /mnt/asplos2021/varmri/userapp/*-*-*-* ${target_dir}/
-mv test_${test_id}_type_${test_type}.log ${target_dir}/
-mv test${test_id}.xml ${target_dir}/
 echo ${nodes} > ${target_dir}/cluster_info
+mv /proj/osu-nfs-test-PG0/cloudlab_var_script/test_${test_id}_type_${test_type}.log ${target_dir}/
+mv /mnt/varcloud/bin/test${test_id}.xml ${target_dir}/
+ssh ${node0} -o StrictHostKeyChecking=no "mv /mnt/asplos2021/varmri/userapp/*-*-*-* ${target_dir}/"
 
 #Terminate the clusters
 ./terminateExperiment osu-nfs-test,test${test_id}
