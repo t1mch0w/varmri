@@ -5,7 +5,7 @@ test_type=$2
 num_nodes=$3
 
 #Apply cluster
-echo "[test${test_id}] apply the cluster"
+echo "[test${test_id}][$(date)] apply the cluster"
 #./startExperiment --project osu-nfs-test --name test${test_id} --duration 16 --bindings="{\"NumberOfNodes\":\"$1\"}" osu-nfs-test,c220g1
 ./startExperiment --project osu-nfs-test --name test${test_id} --duration 16 --bindings="{\"NumberOfNodes\":\"${num_nodes}\"}" osu-nfs-test,c220g5
 if ! [ $? -eq 0 ]
@@ -14,7 +14,7 @@ return 1
 fi
 
 #Check status
-echo "[test${test_id}] start to check status"
+echo "[test${test_id}][$(date)] start to check status"
 while true
 do
 sleep 30
@@ -36,7 +36,7 @@ done
 nodes=$(python get_allhosts.py test${test_id}.xml)
 for node in ${nodes}
 do
-echo "[test${test_id}] start to init"
+echo "[test${test_id}][$(date)] start to init"
 ssh ${node} -o StrictHostKeyChecking=no "cd /proj/osu-nfs-test-PG0/cloudlab_var_script;source init.sh" &
 done
 wait
@@ -46,7 +46,7 @@ wait
 node0=$(python get_hostname.py test${test_id}.xml)
 
 #Run the test
-echo "[test${test_id}] start to test"
+echo "[test${test_id}][$(date)] start to test"
 ssh ${node0} -o StrictHostKeyChecking=no "cd /proj/osu-nfs-test-PG0/cloudlab_var_script;./run_test.sh ${test_type} > test_${test_id}_type_${test_type}.log 2>&1"
 
 #Store results to NFS
@@ -59,5 +59,5 @@ ssh ${node0} -o StrictHostKeyChecking=no "mv /mnt/asplos2021/varmri/userapp/*-*-
 
 #Terminate the clusters
 ./terminateExperiment osu-nfs-test,test${test_id}
-#Wait for 5 minutes for node recovery
-sleep 300
+#Wait for 10 minutes for node recovery
+sleep 600

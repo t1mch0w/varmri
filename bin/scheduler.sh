@@ -1,7 +1,7 @@
 #!/bin/bash
 export PYTHONPATH="/mnt/varcloud/emulab-xmlrpc"
 
-export avai_nodes=29
+export avai_nodes=30
 test_id=0
 declare -A cluster_info
 
@@ -28,7 +28,7 @@ test_type=$2
 num_nodes=$3
 avai_nodes=$(echo "${avai_nodes}-${num_nodes}" | bc)
 source ./run_test.sh ${test_id} ${test_type} ${num_nodes} &
-echo "[scheduler] test${test_id} starts. threadId= $! test_type= ${test_type} num_nodes= ${num_nodes} avai_nodes= ${avai_nodes}"
+echo "[scheduler][$(date)] test${test_id} starts. threadId= $! test_type= ${test_type} num_nodes= ${num_nodes} avai_nodes= ${avai_nodes}"
 cluster_info["$!"]=${num_nodes}
 }
 
@@ -38,7 +38,7 @@ do
 if ! [ -d /proc/${tid} ]
 then
 avai_nodes=$(echo "${avai_nodes}+${cluster_info[${tid}]}" | bc)
-echo "[scheduler] one test finishes. threadId= $tid num_nodes= ${cluster_info[${tid}]} avai_nodes= ${avai_nodes}"
+echo "[scheduler][$(date)] one test finishes. threadId= $tid num_nodes= ${cluster_info[${tid}]} avai_nodes= ${avai_nodes}"
 unset cluster_info[${tid}]
 fi
 done
@@ -53,7 +53,7 @@ num_nodes=$(get_num_nodes ${test_type})
 #wait until we have enough nodes
 while [ "${num_nodes}" -gt "${avai_nodes}" ]
 do
-echo "[scheduler] test${test_id} test_type= ${test_type} num_nodes= ${num_nodes} avai_nodes= ${avai_nodes}"
+echo "[scheduler][$(date)] test${test_id} test_type= ${test_type} num_nodes= ${num_nodes} avai_nodes= ${avai_nodes}"
 sleep 30
 update_test
 done
