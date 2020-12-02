@@ -66,35 +66,6 @@ class VarResult {
 		this.freq = 1.0 * results[7] / this.runningLength;
 	}
 
-
-	public VarResult(ByteBuffer buf) {
-		this.threadId = buf.getInt();
-		this.reqId = buf.getLong();
-		this.event = buf.getInt();
-		this.type = buf.getChar();
-		this.bitmap = buf.getShort();
-
-		for (int i = 0; i < NUM_VAR; i++) {
-			if ((this.bitmap >> i & 1) == 0) {
-				results[i] = 0;
-			}
-			else {
-				results[i] = buf.getLong();
-			}
-
-			if ((i >= 0 && i <= 4) || i >= 12) {
-				results[i] /= TIME_FREQ;
-			}
-		}
-		
-		//this.latency = (results[13] - results[12]);
-		//this.runningLength = latency - results[0] - results[1] - results[2] - results[3] - results[4] - results[5];
-		this.latency = results[13] + results[0] + results[1];
-		//this.runningLength = latency - results[0] - results[1] - results[2] - results[3] - results[4];
-		this.runningLength = results[13] - results[2] - results[3] - results[4];
-		this.freq = 1.0 * results[7] / this.runningLength;
-	}
-
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%.3f", latency));
