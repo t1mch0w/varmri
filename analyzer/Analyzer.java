@@ -54,10 +54,16 @@ class Analyzer {
 			latencyPairs.put(eName, new DoubleListPair());
 		}
 
+		String msrKey = null;
 		for (String firstName : regValueToId.keySet()) {
 			for (String secondName : regValueToId.keySet()) { 
 				if (!firstName.equals(secondName)) {
-					String msrKey = firstName + "-" + secondName;
+					if (firstName.compareTo(secondName) < 0) {
+						msrKey = firstName + "-" + secondName;
+					}
+					else {
+						msrKey = secondName + "-" + firstName;
+					}
 					msrPairs.put(msrKey, new DoubleListPair());
 				}
 			}
@@ -82,8 +88,8 @@ class Analyzer {
 		File msrFile = new File(msrFilePath);
 		fr = new FileReader(msrFile);
 		br = new BufferedReader(fr);
-		
 		ArrayList<String> msrList = new ArrayList<String>();
+
 		while((line = br.readLine()) != null) {
 			if (line.contains("Level")) {
 				String splitArray[]= line.split(" ");
@@ -102,6 +108,9 @@ class Analyzer {
 
 	public void readVarResults(String traceFilePath, ArrayList<DoublePair> switchInfo, ArrayList<ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
 		int count = 0;
+		String msrKey = null;
+		String firstName = null;
+		String secondName = null;
 		//DataInputStream is = new DataInputStream(new FileInputStream(traceFilePath));
 		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream(traceFilePath)));
 		while (is.available() > 0) {
@@ -139,8 +148,8 @@ class Analyzer {
 			// The request is in the middle of a MSR switch 
 			if (switchIdx == -1) continue;
 			
-			// The first 20 minutes
-			if (switchIdx > 3600) break;
+			// The first several requests 
+			if (switchIdx >= 12600) break;
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
@@ -165,12 +174,20 @@ class Analyzer {
 				tmpList.addData(varResult.latency, varResult.results[i]);
 			}
 
+			/*
 			// Prepare msrPairs for proportional relationship and jaccard similarity
 			for (int i = 8; i < 11; i++) {
 				for (int j = i + 1; j < 12; j++) {
-					if (msrInfo.get(switchIdx).get(i - 8).equals(msrInfo.get(switchIdx).get(j - 8))) continue;
-					if (msrInfo.get(switchIdx).get(i - 8).equals("0x000000") || (msrInfo.get(switchIdx).get(j - 8).equals("0x000000"))) continue;
-					String msrKey = msrInfo.get(switchIdx).get(i - 8) + "-" + msrInfo.get(switchIdx).get(j - 8);
+					firstName = msrInfo.get(switchIdx).get(i - 8);
+					secondName = msrInfo.get(switchIdx).get(j - 8);
+					if (firstName.equals("0x000000") || secondName.equals("0x000000")) continue;
+					if (firstName.equals(secondName)) continue;
+					else if (firstName.compareTo(secondName) < 0) {
+						msrKey = firstName + "-" + secondName;
+					}
+					else {
+						msrKey = secondName + "-" + firstName;
+					}
 					//msrPairs.putIfAbsent(msrKey, new DoubleListPair());
 					DoubleListPair tmpList = msrPairs.get(msrKey);
 					tmpList.addData(varResult.results[i], varResult.results[j]);
@@ -180,17 +197,20 @@ class Analyzer {
 			// Prepare pairs between CYCLE/INST and MSR
 			for (int i = 6; i < 8; i++) {
 				for (int j = 8; j < 12; j++) {
-					if (msrInfo.get(switchIdx).get(j - 8).equals("0x000000")) continue;
 					int eventIdx = i;
 					if (msrInfo.get(switchIdx).get(4).equals("0")) {
 							eventIdx += 2;
 					}
-					String msrKey = eventName.get(eventIdx) + "-" + msrInfo.get(switchIdx).get(j - 8);
+					secondName = msrInfo.get(switchIdx).get(j - 8);
+					if (secondName.equals("0x000000")) continue;
+					firstName = eventName.get(eventIdx);
+					msrKey = secondName + "-" + firstName;
 					//msrPairs.putIfAbsent(msrKey, new DoubleListPair());
 					DoubleListPair tmpList = msrPairs.get(msrKey);
 					tmpList.addData(varResult.results[i], varResult.results[j]);
 				}
 			}
+			*/
 			count++;
 		}
 		System.out.printf("#request = %d\n", count);
@@ -311,8 +331,9 @@ class Analyzer {
 		Analyzer analyzer = new Analyzer(switchInfo, msrInfo,latencyPairs, msrPairs);
 		if (args.length > 3) {
 			analyzer.pTarget = Double.parseDouble(args[3]);
-			analyzer.pTargetLowerBound = analyzer.pTarget - 0.005;
-			analyzer.pTargetUpperBound = analyzer.pTarget + 0.005;
+			double threPercent = 1.0 * 5 / Math.pow(10, Double.toString(analyzer.pTarget).length() - 2 + 1);
+			analyzer.pTargetLowerBound = analyzer.pTarget - threPercent;
+			analyzer.pTargetUpperBound = analyzer.pTarget + threPercent;
 		}
 
 		stime = System.nanoTime();

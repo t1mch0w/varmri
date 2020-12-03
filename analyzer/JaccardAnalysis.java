@@ -25,7 +25,7 @@ class JaccardAnalysis extends Thread {
 			cf0.join();
 			cf1.join();
 			double thre0 = cf0.getResult();
-			double thre1 = cf0.getResult();
+			double thre1 = cf1.getResult();
 			ArrayList<Integer> remove0 = getRemovedList(pairs.getFirst(), thre0);
 			ArrayList<Integer> remove1 = getRemovedList(pairs.getSecond(), thre1);
 			HashSet<Integer> set0 = new HashSet<>(remove0);

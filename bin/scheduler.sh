@@ -1,8 +1,11 @@
 #!/bin/bash
 export PYTHONPATH="/mnt/varcloud/emulab-xmlrpc"
 
-export avai_nodes=30
-test_id=0
+#export avai_nodes=30
+#test_id=0
+export avai_nodes=87
+test_id=34
+
 #thread_id to #nodes
 declare -A node_info
 #thread_id to test_id
@@ -86,6 +89,6 @@ done
 run_test ${test_id} ${test_type} ${num_nodes}
 test_id=$(echo "${test_id}+1" | bc)
 
-#sleep for 5 sec, in case two requests of applying clusters are too close.
-sleep 5
+#sleep for 60 sec, in case two requests of applying clusters are too close.
+sleep 60
 done
