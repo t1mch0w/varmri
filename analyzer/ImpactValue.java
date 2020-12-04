@@ -30,7 +30,7 @@ class ImpactValue extends Thread {
 
 		ArrayList<Integer> removedList = getRemovedList(doublePair.getSecond(), threshold);
 		//System.out.printf("Impact value starts to remove %d events of %d events (%f%%).\n", removedList.size(), doublePair.getSecond().size(), (double) removedList.size() / doublePair.getSecond().size());
-		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound);
+		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound, removedList.size());
 		double latencyNormal = getLatency(doublePair.getFirstSorted(), pTargetLowerBound, pTargetUpperBound);
 		//System.out.printf("latencyNormal = %f, latencyRemoved = %f\n", latencyNormal, latencyRemoved);
 		result = latencyNormal / latencyRemoved - 1; 
@@ -54,16 +54,16 @@ class ImpactValue extends Thread {
 		ArrayList<Double> remainedLatencyList = new ArrayList<>(latencyList);
 		Collections.sort(removedList, Collections.reverseOrder());
 		for (int removePos : removedList) {
-			remainedLatencyList.remove(removePos);
+			remainedLatencyList.set(removePos, 0D);
 		}
 		Collections.sort(remainedLatencyList);
 		return remainedLatencyList;
 	}
 
-	public double getLatency(ArrayList<Double> latencyList, double pTargetLowerBound, double pTargetUpperBound) {
-		int total = latencyList.size();
-		int spos = (int)(pTargetLowerBound * total);
-		int epos = (int)(pTargetUpperBound * total);
+	public double getLatency(ArrayList<Double> latencyList, double pTargetLowerBound, double pTargetUpperBound, int numRemoved) {
+		int total = latencyList.size() - numRemoved;
+		int spos = (int)(pTargetLowerBound * total) + numRemoved;
+		int epos = (int)(pTargetUpperBound * total) + numRemoved;
 		int count = 0;
 		double avgLatency = 0;
 		for (int i = spos; i < epos; i++) {
@@ -74,5 +74,7 @@ class ImpactValue extends Thread {
 		return avgLatency/count;
 	}
 
-
+	public double getLatency(ArrayList<Double> latencyList, double pTargetLowerBound, double pTargetUpperBound) {
+		return getLatency(latencyList, pTargetLowerBound, pTargetUpperBound, 0);
+	}
 }

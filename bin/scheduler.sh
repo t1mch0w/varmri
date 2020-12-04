@@ -3,7 +3,7 @@ export PYTHONPATH="/mnt/varcloud/emulab-xmlrpc"
 
 #export avai_nodes=30
 #test_id=0
-export avai_nodes=87
+export avai_nodes=117
 test_id=34
 
 #thread_id to #nodes
@@ -83,12 +83,12 @@ num_nodes=$(get_num_nodes ${test_type})
 while [ "${num_nodes}" -gt "${avai_nodes}" ]
 do
 echo "[scheduler][$(date)] test${test_id} test_type= ${test_type} num_nodes= ${num_nodes} avai_nodes= ${avai_nodes}"
-sleep 30
+sleep 600
 update_test
 done
 run_test ${test_id} ${test_type} ${num_nodes}
 test_id=$(echo "${test_id}+1" | bc)
 
 #sleep for 60 sec, in case two requests of applying clusters are too close.
-sleep 60
+sleep 300
 done

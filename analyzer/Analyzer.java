@@ -9,6 +9,7 @@ class Analyzer {
 	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE");
 
 	int filterType = -1;
+	//int filterType = 2;
 	double pTarget = 0.99;
 	double pTargetLowerBound = 0.99 - 0.005;
 	double pTargetUpperBound = 0.99 + 0.005;
@@ -116,19 +117,13 @@ class Analyzer {
 		while (is.available() > 0) {
 			int skip = 0;
 			VarResult varResult = new VarResult(is);
-			for (double tmp_res : varResult.results) {
-					if (tmp_res < 0) {
-							skip = 1;
-							break;
-					}
-			}
-			for (int i = 8; i < 12; i++) {
-					if (varResult.results[i] > 10000000) {
-							skip = 1;
-							break;
-					}
-			}
-
+            for (int i = 0; i < 14; i++) {
+                if (i == 12) continue;
+                if (varResult.results[i] < 0 || varResult.results[i] > 1e10) {
+                    skip = 1;
+                    break;
+                }
+            }
 			if (skip == 1 || varResult.latency == 0 || varResult.freq > 4 || varResult.results[7] / varResult.results[6] < 0.001) continue;
 
 			if (filterType != -1 && varResult.type != filterType) {
@@ -149,7 +144,7 @@ class Analyzer {
 			if (switchIdx == -1) continue;
 			
 			// The first several requests 
-			if (switchIdx >= 12600) break;
+			//if (switchIdx >= 3600 * 2) break;
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
@@ -171,10 +166,10 @@ class Analyzer {
 				//latencyPairs.putIfAbsent(msrInfo.get(switchIdx).get(eventIdx), new DoubleListPair());
 				if (msrInfo.get(switchIdx).get(eventIdx).equals("0x000000")) continue;
 				DoubleListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
+				if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
 				tmpList.addData(varResult.latency, varResult.results[i]);
 			}
 
-			/*
 			// Prepare msrPairs for proportional relationship and jaccard similarity
 			for (int i = 8; i < 11; i++) {
 				for (int j = i + 1; j < 12; j++) {
@@ -210,7 +205,6 @@ class Analyzer {
 					tmpList.addData(varResult.results[i], varResult.results[j]);
 				}
 			}
-			*/
 			count++;
 		}
 		System.out.printf("#request = %d\n", count);

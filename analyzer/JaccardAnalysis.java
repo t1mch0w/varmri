@@ -28,11 +28,24 @@ class JaccardAnalysis extends Thread {
 			double thre1 = cf1.getResult();
 			ArrayList<Integer> remove0 = getRemovedList(pairs.getFirst(), thre0);
 			ArrayList<Integer> remove1 = getRemovedList(pairs.getSecond(), thre1);
-			HashSet<Integer> set0 = new HashSet<>(remove0);
-			HashSet<Integer> set1 = new HashSet<>(remove1);
-			HashSet<Integer> intersection = new HashSet<>(remove1);
-			HashSet<Integer> union = new HashSet<>(remove1);
+	
+			/* debug
+			//System.out.println("=========");
+			//Collections.sort(remove0);
+			//for (int a : remove0) {
+			//	System.out.printf("%d ",a );				
+			//}
+			//System.out.println();
+			//System.out.println("=========");
+			//Collections.sort(remove1);
+			//for (int a : remove1) {
+			//	System.out.printf("%d ",a);
+			//}
+			//System.out.println();
+			*/
 
+			HashSet<Integer> intersection = new HashSet<>(remove0);
+			HashSet<Integer> union = new HashSet<>(remove0);
 			union.addAll(remove1);
 			intersection.retainAll(remove1);
 	
