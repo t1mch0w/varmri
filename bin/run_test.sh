@@ -57,6 +57,9 @@ mv /proj/osu-nfs-test-PG0/cloudlab_var_script/test_${local_test_id}_type_${local
 mv /mnt/varcloud/bin/test${local_test_id}.xml ${target_dir}/
 ssh ${node0} -o StrictHostKeyChecking=no "mv /mnt/asplos2021/varmri/userapp/*-*-*-* ${target_dir}/"
 
+#For ZK-debug
+ssh ${node0} -o StrictHostKeyChecking=no "mv /mnt/zk-try/zookeeper.log ${target_dir}/"
+
 #Terminate the clusters
 ./terminateExperiment osu-nfs-test,test${local_test_id}
 #Wait for 10 minutes for node recovery

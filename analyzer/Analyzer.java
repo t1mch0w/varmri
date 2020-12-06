@@ -19,12 +19,12 @@ class Analyzer {
 	HashMap<String, Double> propRelationResults;
 	HashMap<String, Double> jaccardResults;
 
-	ArrayList<DoublePair> switchInfo;
-	ArrayList<ArrayList<String>> msrInfo;
+	TreeMap<Double, Double> switchInfo;
+	HashMap<Double, ArrayList<String>> msrInfo;
 	HashMap<String, DoubleListPair> latencyPairs;
 	HashMap<String, DoubleListPair> msrPairs;
 	
-	public Analyzer(ArrayList<DoublePair> switchInfo, ArrayList<ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) {
+	public Analyzer(TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) {
 		regValueToId = new HashMap<String, String>();
 		mapInflectionPoints = new HashMap<String, Double>();
 		impactValueResults = new HashMap<String, Double>();
@@ -71,26 +71,35 @@ class Analyzer {
 		}
 	}
 
-	public void readSwitchInfo(String switchFilePath, String msrFilePath, ArrayList<DoublePair> switchInfo, ArrayList<ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
+	public void readSwitchInfo(String switchFilePath, String msrFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
 		File switchFile = new File(switchFilePath);
 		FileReader fr = new FileReader(switchFile);
 		BufferedReader br = new BufferedReader(fr);
-		String line;
+		String line = null;
+
+		ArrayList<Double> stimeList = new ArrayList<>();
+		ArrayList<Double> etimeList = new ArrayList<>();
 
 		while((line = br.readLine()) != null) {
 			String splitArray[]= line.split(" ");
 			int splitLength = splitArray.length;
 			double stime = Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ;
 			double etime = Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ;
-			DoublePair pair = new DoublePair(stime, etime);
-			switchInfo.add(pair);
+			stimeList.add(stime);
+			etimeList.add(etime);
 		}
+
+		for (int i = 1; i < stimeList.size() - 1; i++) {
+			switchInfo.put(etimeList.get(i - 1), stimeList.get(i));	
+		}
+		switchInfo.put(etimeList.get(etimeList.size() - 1), Double.MAX_VALUE);
 
 		File msrFile = new File(msrFilePath);
 		fr = new FileReader(msrFile);
 		br = new BufferedReader(fr);
 		ArrayList<String> msrList = new ArrayList<String>();
 
+		int msrIdx = 0;
 		while((line = br.readLine()) != null) {
 			if (line.contains("Level")) {
 				String splitArray[]= line.split(" ");
@@ -100,18 +109,20 @@ class Analyzer {
 				msrList.add(msr);
 				if (msrList.size() == 4) {
 					msrList.add(level);
-					msrInfo.add(msrList);
+					msrInfo.put(etimeList.get(msrIdx), msrList);
 					msrList = new ArrayList<String>();
+					msrIdx++;
 				}
 			}
 		}
 	}
 
-	public void readVarResults(String traceFilePath, ArrayList<DoublePair> switchInfo, ArrayList<ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
+	public void readVarResults(String traceFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
 		int count = 0;
 		String msrKey = null;
 		String firstName = null;
 		String secondName = null;
+		double switchStartTime = switchInfo.firstKey();
 		//DataInputStream is = new DataInputStream(new FileInputStream(traceFilePath));
 		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream(traceFilePath)));
 		while (is.available() > 0) {
@@ -130,21 +141,17 @@ class Analyzer {
 				continue;
 			}
 
-			int switchIdx = -1;
-			for (int i = 0; i < switchInfo.size(); i++) {
-				DoublePair currTimeInfo = switchInfo.get(i);
-				DoublePair nextTimeInfo = i < switchInfo.size() - 1 ? switchInfo.get(i + 1) : new DoublePair(Double.MAX_VALUE, Double.MAX_VALUE);
-				if (varResult.results[12] >= currTimeInfo.second && varResult.results[12] + varResult.latency <= nextTimeInfo.first) {
-					switchIdx = i;
-					break;
-				}
+			double switchIdx = -1;
+			Double switchTime = switchInfo.floorKey(varResult.results[12]);
+			if (switchTime != null || varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
+				switchIdx = switchTime;
 			}
 			
 			// The request is in the middle of a MSR switch 
 			if (switchIdx == -1) continue;
 			
-			// The first several requests 
-			//if (switchIdx >= 3600 * 2) break;
+			// Only focus on the first requests 
+			if (switchIdx - switchStartTime >= 3600 * 1e9 * 2) break;
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
@@ -317,8 +324,8 @@ class Analyzer {
 		long stime = 0;
 		long etime = 0;
 
-		ArrayList<DoublePair> switchInfo = new ArrayList<DoublePair>();
-		ArrayList<ArrayList<String>> msrInfo = new ArrayList<ArrayList<String>>();
+		TreeMap<Double, Double> switchInfo = new TreeMap<>();
+		HashMap<Double, ArrayList<String>> msrInfo = new HashMap<Double, ArrayList<String>>();
 		HashMap<String, DoubleListPair> latencyPairs = new HashMap<String, DoubleListPair>();
 		HashMap<String, DoubleListPair> msrPairs = new HashMap<String, DoubleListPair>();
 	
@@ -328,6 +335,10 @@ class Analyzer {
 			double threPercent = 1.0 * 5 / Math.pow(10, Double.toString(analyzer.pTarget).length() - 2 + 1);
 			analyzer.pTargetLowerBound = analyzer.pTarget - threPercent;
 			analyzer.pTargetUpperBound = analyzer.pTarget + threPercent;
+		}
+
+		if (args.length > 4) {
+			analyzer.filterType = Integer.parseInt(args[4]);
 		}
 
 		stime = System.nanoTime();
