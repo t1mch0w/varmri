@@ -11,6 +11,7 @@ class Analyzer {
 	int filterType = -1;
 	//int filterType = 2;
 	double pTarget = 0.99;
+	double rSquared = 0.95;
 	double pTargetLowerBound = 0.99 - 0.005;
 	double pTargetUpperBound = 0.99 + 0.005;
 	HashMap<String, String> regValueToId;
@@ -18,6 +19,11 @@ class Analyzer {
 	HashMap<String, Double> impactValueResults;
 	HashMap<String, Double> propRelationResults;
 	HashMap<String, Double> jaccardResults;
+	HashMap<String, Double> curveFittingThresholds;
+
+	HashMap<String, ArrayList<String>> priorityList;
+	HashMap<String, Double> finalImpactValueResults;
+	HashMap<String, String> finalFilteredReasons;
 
 	TreeMap<Double, Double> switchInfo;
 	HashMap<Double, ArrayList<String>> msrInfo;
@@ -30,10 +36,32 @@ class Analyzer {
 		impactValueResults = new HashMap<String, Double>();
 		propRelationResults = new HashMap<String, Double>();
 		jaccardResults = new HashMap<String, Double>();
+		curveFittingThresholds = new HashMap<>();
+		priorityList = new HashMap<>();
+		finalImpactValueResults = new HashMap<>();
+		finalFilteredReasons =  new HashMap<>();
+
 		this.switchInfo = switchInfo;
 		this.msrInfo  = msrInfo;
 		this.latencyPairs = latencyPairs;
 		this.msrPairs = msrPairs;
+	}
+
+	public void readPriorityList() throws FileNotFoundException, IOException {
+		File priorityFile = new File("./priorityList");
+		FileReader fr = new FileReader(priorityFile);
+		BufferedReader br = new BufferedReader(fr);
+		String line;
+
+		while((line = br.readLine()) != null) {
+			if (line.contains("#")) continue;
+			String splitArray[]= line.split(" ");
+			ArrayList<String> tmpList = new ArrayList<>();
+			for (int i = 1; i < splitArray.length; i++) {
+					tmpList.add(splitArray[i]);
+			}
+			priorityList.put(splitArray[0], tmpList);
+		}
 	}
 
 	public void readRegValueToId(HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
@@ -143,6 +171,7 @@ class Analyzer {
 
 			double switchIdx = -1;
 			Double switchTime = switchInfo.floorKey(varResult.results[12]);
+			if (switchTime == null) continue;
 			if (switchTime != null || varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
 				switchIdx = switchTime;
 			}
@@ -272,7 +301,10 @@ class Analyzer {
 
 		for (String key : msrPairs.keySet()) {
 			if (msrPairs.get(key).size() == 0) continue;
-			JaccardAnalysis ja = new JaccardAnalysis(msrPairs.get(key), pTarget);
+			String[] keySet = key.split("-");
+			double thre0 = curveFittingThresholds.get(keySet[0]);
+			double thre1 = curveFittingThresholds.get(keySet[1]);
+			JaccardAnalysis ja = new JaccardAnalysis(msrPairs.get(key), thre0, thre1);
 			ja.start();
 			jaMap.put(key, ja);
 		}
@@ -292,12 +324,13 @@ class Analyzer {
 	}
 
 	//Join function
-	public void join(HashMap<String, ImpactValue> ivMap, HashMap<String, PropRelation> prMap, HashMap<String, JaccardAnalysis> jaMap) {
+	public void joinAndStartJaccard(HashMap<String, ImpactValue> ivMap, HashMap<String, PropRelation> prMap) {
 		try {
 			for (String key : ivMap.keySet()){
 					ImpactValue iv = ivMap.get(key);
 					iv.join();
 					impactValueResults.put(key, iv.getResult());
+					curveFittingThresholds.put(key, iv.getThreshold());
 			}
 
 			for (String key : prMap.keySet()) {
@@ -305,6 +338,9 @@ class Analyzer {
 					pr.join();
 					propRelationResults.put(key, pr.getResult());
 			}
+
+			//Third step: get jaccard similarity
+			HashMap<String, JaccardAnalysis> jaMap = jaccardAnalysis(msrPairs);
 
 			for (String key : jaMap.keySet()) {
 					JaccardAnalysis ja = jaMap.get(key);
@@ -314,8 +350,121 @@ class Analyzer {
 
 		} catch (Exception e) {
 			System.out.println("Exception caught in analysis().");
+			e.printStackTrace();
 		}
 	}
+
+	public void generateOutputFinals() throws IOException {
+		// #Type (0:CYCLE, 1:CACHE, 2:INST, and MSR register value)
+		String msrKey = null;
+		String[] instArray = {"INST", "KINST"};
+		String[] cycleArray = {"CYCLE", "KCYCLE"};
+		ArrayList<String> instList = new ArrayList<>(Arrays.asList(instArray));
+		ArrayList<String> cycleList = new ArrayList<>(Arrays.asList(cycleArray));
+		
+		// Remove from the second step (proportional relationship)
+		for (String firstKey : priorityList.keySet()) {
+			ArrayList<String> secondKeys = new ArrayList<>();
+			for (String secondKey : priorityList.get(firstKey)) {
+				if (secondKey.equals("0")) {
+						secondKeys.addAll(cycleList);
+				}
+				else if (secondKey.equals("2")) {
+						secondKeys.addAll(instList);
+				}
+				else {
+						secondKeys.add(secondKey);
+				}
+			}
+
+			for (String secondKey : secondKeys) {
+				if (firstKey.compareTo(secondKey) < 0) {
+					msrKey = firstKey + "-" + secondKey;
+				}
+				else {
+					msrKey = secondKey + "-" + firstKey;
+				}
+				if (propRelationResults.containsKey(msrKey) && propRelationResults.get(msrKey) >= rSquared) {
+					finalImpactValueResults.put(firstKey, 0.0);
+					finalFilteredReasons.put(firstKey, String.format("Proportional to %s", secondKey));
+					break;
+				}
+			}
+		}
+
+		// Check jaccard similarity
+		for (String firstKey : priorityList.keySet()) {
+			String maxKey = null;
+			double maxValue = 0.0;
+			double maxJaccard = 0.0;
+			ArrayList<String> checkedList = new ArrayList<>();
+			// Already removed by the proportional relationship
+			if (finalImpactValueResults.containsKey(firstKey)) continue;
+
+			// Add basic INST and CYCLE to checkedList
+			String msrLevel = priorityList.get(firstKey).get(0);
+			if (msrLevel.equals("0")) {
+				checkedList.addAll(cycleList);
+			}
+			else if (msrLevel.equals("2")) {
+				checkedList.addAll(instList);
+			}
+			// Not only checked with level, but specified MSR
+			if (priorityList.get(firstKey).size() > 1) {
+				ArrayList<String> firstValue = priorityList.get(firstKey);
+				for (int i = 1; i < firstValue.size(); i++) {
+					checkedList.add(firstValue.get(i));
+				}
+			}
+
+			// Add higher level to checkedList
+			for (String key : priorityList.keySet()) {
+				if (msrLevel.compareTo(priorityList.get(key).get(0)) < 0) {
+					checkedList.add(key);
+				}
+			}
+
+			double firstValue = impactValueResults.get(firstKey);
+			for (String secondKey : checkedList) {
+				if (firstValue < impactValueResults.get(secondKey)) {
+					if (firstKey.compareTo(secondKey) < 0) {
+						msrKey = firstKey + "-" + secondKey;
+					}
+					else {
+						msrKey = secondKey + "-" + firstKey;
+					}
+					// No jaccard similarity, continue
+					if (!jaccardResults.containsKey(msrKey)) continue;
+
+					double tmpValue = jaccardResults.get(msrKey) * impactValueResults.get(secondKey);
+					if (tmpValue > maxValue) {
+						maxKey = secondKey;
+						maxValue = tmpValue;
+						maxJaccard = jaccardResults.get(msrKey);
+					}
+				}
+			}
+
+			if (maxValue > 0) {
+				finalImpactValueResults.put(firstKey, firstValue - maxValue);
+				finalFilteredReasons.put(firstKey, String.format("Remove %f due to jaccard similarity %f to %s", maxValue, maxJaccard, maxKey));
+			}
+		}
+
+		// Final output
+		FileWriter fileWriter = new FileWriter("final_result.txt");
+		for (String key : impactValueResults.keySet()) {
+			double finalRes = impactValueResults.get(key);
+			String filteredReason =	"N/A";
+			if (finalImpactValueResults.containsKey(key)) {
+				finalRes = finalImpactValueResults.get(key);
+				filteredReason = finalFilteredReasons.get(key);
+			}
+			fileWriter.write(String.format("%s,%d,%f,%f,%s\n", regValueToId.get(key), latencyPairs.get(key).size(), impactValueResults.get(key),finalRes,filteredReason));
+		}
+		fileWriter.close();
+	}
+
 
 	public static void main(String args[]) throws IOException {
 		String traceFilePath = args[0];
@@ -342,6 +491,7 @@ class Analyzer {
 		}
 
 		stime = System.nanoTime();
+		analyzer.readPriorityList();
 		analyzer.readRegValueToId(latencyPairs, msrPairs);
 		analyzer.readSwitchInfo(switchFilePath, msrFilePath, switchInfo, msrInfo);
 		analyzer.readVarResults(traceFilePath, switchInfo, msrInfo, latencyPairs, msrPairs);
@@ -354,14 +504,13 @@ class Analyzer {
 		//Second step: get proportional relationship
 		HashMap<String, PropRelation> prMap = analyzer.propRelationshipAnalysis(msrPairs);
 
-		//Third step: get jaccard similarity
-		HashMap<String, JaccardAnalysis> jaMap = analyzer.jaccardAnalysis(msrPairs);	
-
-		//Wait for all tasks finished
-		analyzer.join(ivMap, prMap, jaMap);
+		//Wait for all tasks finished and start the third step
+		analyzer.joinAndStartJaccard(ivMap, prMap);
 
 		analyzer.generateOutputImpactValue();
 		analyzer.generateOutputPropRelation();
 		analyzer.generateOutputJaccardResults();
+
+		analyzer.generateOutputFinals();
 	}
 }

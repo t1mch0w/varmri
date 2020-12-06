@@ -36,6 +36,10 @@ class ImpactValue extends Thread {
 		result = latencyNormal / latencyRemoved - 1; 
 	}
 
+	public double getThreshold() {
+		return threshold;
+	}
+
 	public double getResult() {
 		return result;
 	}
