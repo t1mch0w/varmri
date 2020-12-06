@@ -7,6 +7,7 @@ all:
 	javac -cp commons-math3-3.6.1.jar:. JaccardAnalysis.java
 	javac -cp commons-math3-3.6.1.jar:. Test.java
 	javac -cp commons-math3-3.6.1.jar:. Analyzer.java
+	javac -cp commons-math3-3.6.1.jar:. LatencyTool.java
 
 clean:
 	rm *.class

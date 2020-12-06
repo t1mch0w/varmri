@@ -172,7 +172,7 @@ class Analyzer {
 			double switchIdx = -1;
 			Double switchTime = switchInfo.floorKey(varResult.results[12]);
 			if (switchTime == null) continue;
-			if (switchTime != null || varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
+			if (varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
 				switchIdx = switchTime;
 			}
 			
@@ -386,7 +386,7 @@ class Analyzer {
 				}
 				if (propRelationResults.containsKey(msrKey) && propRelationResults.get(msrKey) >= rSquared) {
 					finalImpactValueResults.put(firstKey, 0.0);
-					finalFilteredReasons.put(firstKey, String.format("Proportional to %s", secondKey));
+					finalFilteredReasons.put(firstKey, String.format("Proportional to %s(%s)", regValueToId.get(secondKey), secondKey));
 					break;
 				}
 			}
@@ -447,7 +447,7 @@ class Analyzer {
 
 			if (maxValue > 0) {
 				finalImpactValueResults.put(firstKey, firstValue - maxValue);
-				finalFilteredReasons.put(firstKey, String.format("Remove %f due to jaccard similarity %f to %s", maxValue, maxJaccard, maxKey));
+				finalFilteredReasons.put(firstKey, String.format("Remove %f due to jaccard similarity %f to %s(%s)", maxValue, maxJaccard, regValueToId.get(maxKey), maxKey));
 			}
 		}
 
@@ -460,7 +460,7 @@ class Analyzer {
 				finalRes = finalImpactValueResults.get(key);
 				filteredReason = finalFilteredReasons.get(key);
 			}
-			fileWriter.write(String.format("%s,%d,%f,%f,%s\n", regValueToId.get(key), latencyPairs.get(key).size(), impactValueResults.get(key),finalRes,filteredReason));
+			fileWriter.write(String.format("%s(%s),%d,%f,%f,%s\n", regValueToId.get(key), key, latencyPairs.get(key).size(), impactValueResults.get(key),finalRes,filteredReason));
 		}
 		fileWriter.close();
 	}
