@@ -1,4 +1,3 @@
-import org.apache.commons.math3.stat.regression.SimpleRegression;
 import java.util.*;
 
 class JaccardAnalysis extends Thread {
