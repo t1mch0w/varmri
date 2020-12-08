@@ -2,7 +2,7 @@ count=0
 for j in 0 1 2 3 4 5 6 7
 do
 #for l in $(find /nfs/*type${j} -name "result_fake" | cut -f-4 -d"/")
-for l in $(find /mnt/1204/*type${j} -name "result_fake" | cut -f-5 -d"/")
+for l in $(find /mnt/1207/*type${j} -name "result_fake" | cut -f-5 -d"/")
 do
 #k=$(echo ${l} | awk -F"/" '{print $3}')
 k=$(echo ${l} | awk -F"/" '{print $4}')

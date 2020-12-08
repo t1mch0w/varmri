@@ -31,8 +31,14 @@ class CurveFit extends Thread {
 		this.totalDataPoints = pairs.size();
 		this.numOfDataPoints = (int)Math.ceil(1.0 * totalDataPoints / numOfSegments);
 
-		pTargetLowerBound = 1 - ((1 - pTarget) * 2 + delta);
-		pTargetUpperBound = 1 - ((1 - pTarget) * 2);
+		if (pTarget < 0.5) {
+			pTargetLowerBound = 1 - (1 - pTarget - delta);
+			pTargetUpperBound = 1 - (1 - pTarget - 2 * delta);
+		}
+		else {
+			pTargetLowerBound = 1 - ((1 - pTarget) * 2 + delta);
+			pTargetUpperBound = 1 - ((1 - pTarget) * 2);
+		}
 		lowerBound = (int)Math.floor(pTargetLowerBound * totalDataPoints);
 		upperBound = (int)Math.floor(pTargetUpperBound * totalDataPoints);
 	}

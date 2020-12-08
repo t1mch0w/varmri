@@ -36,6 +36,12 @@ class JaccardAnalysis extends Thread {
 			System.out.println();
 			*/
 
+			//Swap to make remove1 smaller
+			if (remove0.size() < remove1.size()) {
+				ArrayList<Integer> tmp = remove1;
+				remove1 = remove0;
+				remove0 = tmp;
+			}
 			HashSet<Integer> intersection = new HashSet<>(remove0);
 			HashSet<Integer> union = new HashSet<>(remove0);
 			union.addAll(remove1);

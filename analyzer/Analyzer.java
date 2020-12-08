@@ -11,11 +11,20 @@ class Analyzer {
 	int filterType = -1;
 	//int filterType = 2;
 	double pTarget = 0.99;
-	double rSquared = 0.99;
 	double pTargetLowerBound = 0.99 - 0.005;
 	double pTargetUpperBound = 0.99 + 0.005;
+
+	//Used for memory benchmark
+	//double pTarget = 0.25;
+	//double pTargetLowerBound = 0.245;
+	//double pTargetUpperBound = 0.255;
+
+	double propRSquared = 0.99;
 	double windowLengthInHours = 2;
 	double targetWindow = 0;
+
+	String testName = "";
+
 	HashMap<String, String> regValueToId;
 	HashMap<String, Double> mapInflectionPoints;
 	HashMap<String, Double> impactValueResults;
@@ -271,7 +280,7 @@ class Analyzer {
 	}
 
 	public void generateOutputImpactValue() throws IOException {
-		FileWriter fileWriter = new FileWriter("impact_value.txt");
+		FileWriter fileWriter = new FileWriter(testName + "_impact_value.txt");
 		for (String key : impactValueResults.keySet()) {
 			fileWriter.write(String.format("[Impact Value] %s %d %f %f\n", regValueToId.get(key), latencyPairs.get(key).size(), removedPercentResults.get(key), impactValueResults.get(key)));
 		}
@@ -295,7 +304,7 @@ class Analyzer {
 	}
 
 	public void generateOutputPropRelation() throws IOException {
-		FileWriter fileWriter = new FileWriter("prop_relation.txt");
+		FileWriter fileWriter = new FileWriter(testName + "_prop_relation.txt");
 		for (String key : propRelationResults.keySet()) {
 			String[] keySet = key.split("-");
 			fileWriter.write(String.format("[Prop Relation] %s %s %d %f\n", regValueToId.get(keySet[0]), regValueToId.get(keySet[1]), msrPairs.get(key).size(), propRelationResults.get(key)));
@@ -324,7 +333,7 @@ class Analyzer {
 	}
 
 	public void generateOutputJaccardResults() throws IOException {
-		FileWriter fileWriter = new FileWriter("jaccard_similarity.txt");
+		FileWriter fileWriter = new FileWriter(testName + "_jaccard_similarity.txt");
 		for (String key : jaccardResults.keySet()) {
 			String[] keySet = key.split("-");
 			fileWriter.write(String.format("[Jaccard Result] %s %s %d %f\n", regValueToId.get(keySet[0]), regValueToId.get(keySet[1]), msrPairs.get(key).size(), jaccardResults.get(key)));
@@ -394,7 +403,7 @@ class Analyzer {
 				else {
 					msrKey = secondKey + "-" + firstKey;
 				}
-				if (propRelationResults.containsKey(msrKey) && propRelationResults.get(msrKey) >= rSquared) {
+				if (propRelationResults.containsKey(msrKey) && propRelationResults.get(msrKey) >= propRSquared) {
 					finalImpactValueResults.put(firstKey, 0.0);
 					finalFilteredReasons.put(firstKey, String.format("Proportional to %s(%s)", regValueToId.get(secondKey), secondKey));
 					break;
@@ -460,7 +469,7 @@ class Analyzer {
 		}
 
 		// Final output
-		FileWriter fileWriter = new FileWriter("final_result.txt");
+		FileWriter fileWriter = new FileWriter(testName + "_final_result.txt");
 		for (String key : impactValueResults.keySet()) {
 			double finalRes = impactValueResults.get(key);
 			String filteredReason =	"N/A";
@@ -473,6 +482,15 @@ class Analyzer {
 		fileWriter.close();
 	}
 
+	public void getTestName(String traceFilePath) {
+		String splitArray[]= traceFilePath.split("/");
+		for (String tmpStr : splitArray) {
+			if (tmpStr.contains("test")) {
+				testName = tmpStr;
+				break;
+			}
+		}
+	}
 
 	public static void main(String args[]) throws IOException {
 		String traceFilePath = args[0];
@@ -498,21 +516,22 @@ class Analyzer {
 		
 		// Request type
 		if (args.length > 4) {
-			analyzer.filterType = Integer.parseInt(args[6]);
+			analyzer.filterType = Integer.parseInt(args[4]);
 		}
 
 		// Window length in hours
 		if (args.length > 5) {
-			analyzer.windowLengthInHours = Double.parseDouble(args[4]);
+			analyzer.windowLengthInHours = Double.parseDouble(args[5]);
 		}
 
 		// Target window
 		if (args.length > 6) {
-			analyzer.targetWindow = Double.parseDouble(args[5]);
+			analyzer.targetWindow = Double.parseDouble(args[6]);
 		}
 
 
 		stime = System.nanoTime();
+		analyzer.getTestName(traceFilePath);
 		analyzer.readPriorityList();
 		analyzer.readRegValueToId(latencyPairs, msrPairs);
 		analyzer.readSwitchInfo(switchFilePath, msrFilePath, switchInfo, msrInfo);

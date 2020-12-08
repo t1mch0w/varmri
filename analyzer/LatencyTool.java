@@ -12,6 +12,7 @@ class LatencyTool {
 	static double CPUFREQ = 2.2;
 	ArrayList<ArrayList<Double>> latLists = null;
 	String subDir = null;
+	int CDFIdx = -1;
 
 	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE");
 
@@ -188,14 +189,28 @@ class LatencyTool {
 		}
 	}
 
+	public void generateCDFFile() {
+		ArrayList<Double> targetList = latLists.get(CDFIdx);
+		Collections.sort(targetList);
+		int total = targetList.size();
+		for (int i = 0; i < total; i++) {
+			System.out.printf("%f %f\n", 1.0 * i / total, targetList.get(i));
+		}
+	}
+
 	public static void main(String args[]) throws IOException {
 		String traceFilePath = args[0];
 		String switchFilePath = args[1];
 		String msrFilePath = args[2];
 		LatencyTool analyzer = new LatencyTool(Double.parseDouble(args[3]));
 		analyzer.subDir = traceFilePath.substring(0, traceFilePath.length() - 12);
+
 		if (args.length > 4) {
 			analyzer.filterType = Integer.parseInt(args[4]);
+		}
+
+		if (args.length > 5) {
+			analyzer.CDFIdx = Integer.parseInt(args[5]);
 		}
 
 		TreeMap<Double, Double> switchInfo = new TreeMap<>();
@@ -205,6 +220,11 @@ class LatencyTool {
 
 		analyzer.readSwitchInfo(switchFilePath, msrFilePath, switchInfo, msrInfo);
 		analyzer.readVarResults(traceFilePath, switchInfo, msrInfo, latencyPairs, msrPairs);
-		analyzer.generateLatencyFile();
+		if (analyzer.CDFIdx == -1) {
+			analyzer.generateLatencyFile();
+		}
+		else {
+			analyzer.generateCDFFile();
+		}
 	}
 }
