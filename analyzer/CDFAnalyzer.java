@@ -52,8 +52,6 @@ public class CDFAnalyzer {
         numInitIntervals = numIntervals;
     }
 
-
-
     private void findWithoutAdjust(){
         curReg = new SimpleRegression();
         tempReg = new SimpleRegression();
@@ -99,9 +97,6 @@ public class CDFAnalyzer {
         turningPointsY.add(allData[idx][0]);
     }
 
-
-
-
     private void validateIndex(){
         // avoid index out of bound
         end = Math.min(end, allData.length - 1);
@@ -130,7 +125,3 @@ public class CDFAnalyzer {
 
 
 }
-
-
-
-
