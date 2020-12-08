@@ -6,7 +6,7 @@ import java.nio.charset.*;
 
 class Analyzer {
 	static double CPUFREQ = 2.2;
-	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE");
+	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE", "1/FREQ");
 
 	int filterType = -1;
 	//int filterType = 2;
@@ -19,6 +19,7 @@ class Analyzer {
 	HashMap<String, String> regValueToId;
 	HashMap<String, Double> mapInflectionPoints;
 	HashMap<String, Double> impactValueResults;
+	HashMap<String, Double> removedPercentResults;
 	HashMap<String, Double> propRelationResults;
 	HashMap<String, Double> jaccardResults;
 	HashMap<String, Double> curveFittingThresholds;
@@ -36,6 +37,7 @@ class Analyzer {
 		regValueToId = new HashMap<String, String>();
 		mapInflectionPoints = new HashMap<String, Double>();
 		impactValueResults = new HashMap<String, Double>();
+		removedPercentResults = new HashMap<String, Double>();
 		propRelationResults = new HashMap<String, Double>();
 		jaccardResults = new HashMap<String, Double>();
 		curveFittingThresholds = new HashMap<>();
@@ -209,6 +211,10 @@ class Analyzer {
 				tmpList.addData(varResult.latency, varResult.results[i]);
 			}
 
+			// Add latency and Freq
+			DoubleListPair freqList = latencyPairs.get("1/FREQ");
+			freqList.addData(varResult.latency, 1.0 / varResult.freq);
+
 			// Prepare msrPairs for proportional relationship and jaccard similarity
 			for (int i = 8; i < 11; i++) {
 				for (int j = i + 1; j < 12; j++) {
@@ -228,11 +234,11 @@ class Analyzer {
 				}
 			}
 
-			// Prepare pairs between CYCLE/INST and MSR
-			for (int i = 6; i < 8; i++) {
+			// Prepare pairs between kernel length/CYCLE/INST and MSR
+			for (int i = 0; i < 8; i++) {
 				for (int j = 8; j < 12; j++) {
 					int eventIdx = i;
-					if (msrInfo.get(switchIdx).get(4).equals("0")) {
+					if (i >= 6 && msrInfo.get(switchIdx).get(4).equals("0")) {
 							eventIdx += 2;
 					}
 					secondName = msrInfo.get(switchIdx).get(j - 8);
@@ -267,7 +273,7 @@ class Analyzer {
 	public void generateOutputImpactValue() throws IOException {
 		FileWriter fileWriter = new FileWriter("impact_value.txt");
 		for (String key : impactValueResults.keySet()) {
-			fileWriter.write(String.format("[Impact Value] %s %d %f\n", regValueToId.get(key), latencyPairs.get(key).size(), impactValueResults.get(key)));
+			fileWriter.write(String.format("[Impact Value] %s %d %f %f\n", regValueToId.get(key), latencyPairs.get(key).size(), removedPercentResults.get(key), impactValueResults.get(key)));
 		}
 		fileWriter.close();
 	}
@@ -333,6 +339,7 @@ class Analyzer {
 					ImpactValue iv = ivMap.get(key);
 					iv.join();
 					impactValueResults.put(key, iv.getResult());
+					removedPercentResults.put(key, iv.getRemovedPercent());
 					curveFittingThresholds.put(key, iv.getThreshold());
 			}
 
@@ -461,7 +468,7 @@ class Analyzer {
 				finalRes = finalImpactValueResults.get(key);
 				filteredReason = finalFilteredReasons.get(key);
 			}
-			fileWriter.write(String.format("%s(%s),%d,%f,%f,%s\n", regValueToId.get(key), key, latencyPairs.get(key).size(), impactValueResults.get(key),finalRes,filteredReason));
+			fileWriter.write(String.format("%s(%s),%d,%f,%f,%f,%s\n", regValueToId.get(key), key, latencyPairs.get(key).size(), removedPercentResults.get(key), impactValueResults.get(key),finalRes,filteredReason));
 		}
 		fileWriter.close();
 	}

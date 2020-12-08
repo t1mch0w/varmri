@@ -7,6 +7,7 @@ class ImpactValue extends Thread {
 	double pTargetLowerBound;
 	double pTargetUpperBound;
 	double result;
+	double removedPercent;
 	
 
 	public ImpactValue(DoubleListPair doublePair, double pTarget, double pTargetLowerBound, double pTargetUpperBound) {
@@ -23,6 +24,7 @@ class ImpactValue extends Thread {
 			cf.start();
 			cf.join();
 			threshold = cf.getResult();
+			removedPercent = cf.getRemovedPercent();
 			//mapInflectionPoints.put(key, cfMap.get(key).getResult());
 		} catch (Exception e) {
 			System.out.println("Exception caught in curveFit().");
@@ -42,6 +44,10 @@ class ImpactValue extends Thread {
 
 	public double getResult() {
 		return result;
+	}
+
+	public double getRemovedPercent() {
+		return removedPercent;
 	}
 
 	public ArrayList<Integer> getRemovedList(ArrayList<Double> eventValueList, double threshold) {

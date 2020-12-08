@@ -10,9 +10,10 @@ class CurveFit extends Thread {
 	int totalDataPoints = 0;
 	int numOfDataPoints = 0; 
 	int targetColumn = 0;
-	int lowerBoundSegment = 0;
-	int upperBoundSegment = 0;
+	int lowerBound = 0;
+	int upperBound = 0;
 	double result;
+	double removedPercent;
 
 	public CurveFit() {
 	}
@@ -32,8 +33,8 @@ class CurveFit extends Thread {
 
 		pTargetLowerBound = 1 - ((1 - pTarget) * 2 + delta);
 		pTargetUpperBound = 1 - ((1 - pTarget) * 2);
-		lowerBoundSegment = (int)Math.floor(pTargetLowerBound * totalDataPoints / numOfDataPoints);
-		upperBoundSegment = (int)Math.floor(pTargetUpperBound * totalDataPoints / numOfDataPoints);
+		lowerBound = (int)Math.floor(pTargetLowerBound * totalDataPoints);
+		upperBound = (int)Math.floor(pTargetUpperBound * totalDataPoints);
 	}
 
 	// Get results
@@ -41,9 +42,14 @@ class CurveFit extends Thread {
 		return result;
 	}
 
+	public double getRemovedPercent() {
+		return removedPercent; 
+	}
+
 	public void run() {
 		double[][] allData = pairs.getDoubleArray(targetColumn,0,totalDataPoints-1);
 		CDFAnalyzer cdfAnalyzer = new CDFAnalyzer(allData);
-		result = cdfAnalyzer.getTurningPointAt(lowerBoundSegment, upperBoundSegment);
+		result = cdfAnalyzer.getTurningPointAt(lowerBound, upperBound);
+		removedPercent = 1 - cdfAnalyzer.getTurningPointPercent();
 	}
 }

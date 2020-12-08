@@ -20,11 +20,15 @@ public class CDFAnalyzer {
     private SimpleRegression tempReg;
     // starting and ending index
     int start;
-    int end ;
+    int end;
     // whether the interval have been adjusted
     // in this iteration
     boolean adjusted;
     boolean ascending;
+
+    double turningPointValue;
+    double turningPointPos;
+    int numOfDataPoints;
 
     public CDFAnalyzer(double[][] data) {
         // default R2-Threshold: 0.95
@@ -50,6 +54,9 @@ public class CDFAnalyzer {
         turningPointsX = new ArrayList<>();
         turningPointsY = new ArrayList<>();
         numInitIntervals = numIntervals;
+	turningPointValue = Double.NaN;
+	turningPointPos = data.length - 1;
+	numOfDataPoints = data.length - 1;
     }
 
     private void findWithoutAdjust(){
@@ -106,22 +113,23 @@ public class CDFAnalyzer {
     public double getTurningPointAt(int lower,int target){
         findWithoutAdjust();
 
-        double res = Double.NaN;
-
-
         for(int i=0;i<turningPointsX.size();i++){
             double point = turningPointsX.get(i);
             double lat = turningPointsY.get(i);
             if (point > lower && point <= target){
-                res = lat;
+		    turningPointValue = lat;
+		    turningPointPos = point;
             }
-            else if (Double.isNaN(res) && point >= target){
-                return lat;
+            else if (Double.isNaN(turningPointValue) && point >= target){
+		    turningPointValue = lat;
+		    turningPointPos = point;
+		    break;
             }
         }
-
-        return res;
+        return turningPointValue;
     }
 
-
+    public double getTurningPointPercent() {
+	    return turningPointPos / numOfDataPoints;
+    }
 }
