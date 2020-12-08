@@ -11,9 +11,11 @@ class Analyzer {
 	int filterType = -1;
 	//int filterType = 2;
 	double pTarget = 0.99;
-	double rSquared = 0.95;
+	double rSquared = 0.99;
 	double pTargetLowerBound = 0.99 - 0.005;
 	double pTargetUpperBound = 0.99 + 0.005;
+	double windowLengthInHours = 2;
+	double targetWindow = 0;
 	HashMap<String, String> regValueToId;
 	HashMap<String, Double> mapInflectionPoints;
 	HashMap<String, Double> impactValueResults;
@@ -180,7 +182,8 @@ class Analyzer {
 			if (switchIdx == -1) continue;
 			
 			// Only focus on the first requests 
-			if (switchIdx - switchStartTime >= 3600 * 1e9 * 2) break;
+			if (switchIdx - switchStartTime < 3600 * 1e9 * windowLengthInHours * targetWindow) continue;
+			if (switchIdx - switchStartTime >= 3600 * 1e9 * (windowLengthInHours) * (targetWindow + 1)) break;
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
@@ -426,22 +429,20 @@ class Analyzer {
 
 			double firstValue = impactValueResults.get(firstKey);
 			for (String secondKey : checkedList) {
-				if (firstValue < impactValueResults.get(secondKey)) {
-					if (firstKey.compareTo(secondKey) < 0) {
-						msrKey = firstKey + "-" + secondKey;
-					}
-					else {
-						msrKey = secondKey + "-" + firstKey;
-					}
-					// No jaccard similarity, continue
-					if (!jaccardResults.containsKey(msrKey)) continue;
+				if (firstKey.compareTo(secondKey) < 0) {
+					msrKey = firstKey + "-" + secondKey;
+				}
+				else {
+					msrKey = secondKey + "-" + firstKey;
+				}
+				// No jaccard similarity, continue
+				if (!jaccardResults.containsKey(msrKey)) continue;
 
-					double tmpValue = jaccardResults.get(msrKey) * impactValueResults.get(secondKey);
-					if (tmpValue > maxValue) {
-						maxKey = secondKey;
-						maxValue = tmpValue;
-						maxJaccard = jaccardResults.get(msrKey);
-					}
+				double tmpValue = jaccardResults.get(msrKey) * impactValueResults.get(secondKey);
+				if (tmpValue > maxValue) {
+					maxKey = secondKey;
+					maxValue = tmpValue;
+					maxJaccard = jaccardResults.get(msrKey);
 				}
 			}
 
@@ -484,11 +485,25 @@ class Analyzer {
 			double threPercent = 1.0 * 5 / Math.pow(10, Double.toString(analyzer.pTarget).length() - 2 + 1);
 			analyzer.pTargetLowerBound = analyzer.pTarget - threPercent;
 			analyzer.pTargetUpperBound = analyzer.pTarget + threPercent;
+			System.out.println("analyzer.pTargetLowerBound = " + analyzer.pTargetLowerBound);
+			System.out.println("analyzer.pTargetUpperBound = " + analyzer.pTargetUpperBound);
+		}
+		
+		// Request type
+		if (args.length > 4) {
+			analyzer.filterType = Integer.parseInt(args[6]);
 		}
 
-		if (args.length > 4) {
-			analyzer.filterType = Integer.parseInt(args[4]);
+		// Window length in hours
+		if (args.length > 5) {
+			analyzer.windowLengthInHours = Double.parseDouble(args[4]);
 		}
+
+		// Target window
+		if (args.length > 6) {
+			analyzer.targetWindow = Double.parseDouble(args[5]);
+		}
+
 
 		stime = System.nanoTime();
 		analyzer.readPriorityList();

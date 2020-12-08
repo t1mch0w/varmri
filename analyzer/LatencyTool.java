@@ -30,12 +30,19 @@ class LatencyTool {
 		Collections.sort(latList);
 		double topTotal = 0;
 		int topCount = 100;
+	
+		result.add((double)latList.size());
 
-		for (int i = latList.size() - 1; i >= latList.size() - topCount + 1; i--) {
-			topTotal += latList.get(i);
-			//System.out.println(latList.get(i));
+		if (latList.size() < 100) {
+			result.add(0.0);
 		}
-		result.add(topTotal / topCount);
+		else {
+			for (int i = latList.size() - 1; i >= latList.size() - topCount + 1; i--) {
+				topTotal += latList.get(i);
+				//System.out.println(latList.get(i));
+			}
+			result.add(topTotal / topCount);
+		}
 
 		for (Double p : target) {
 			result.add(getLatencyByPercent(latList, p));
@@ -151,13 +158,6 @@ class LatencyTool {
 			if (filterType != -1 && varResult.type != filterType) {
 				continue;
 			}
-
-			//if (varResult.latency > 2.09E+16) {
-			//	for (double d : varResult.results) {
-			//		System.out.printf("%f ", d);
-			//	}
-			//	System.out.println();
-			//}
 
 			double switchIdx = -1;
 			Double switchTime = switchInfo.floorKey(varResult.results[12]);

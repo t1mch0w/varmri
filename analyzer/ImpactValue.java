@@ -33,7 +33,7 @@ class ImpactValue extends Thread {
 		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound, removedList.size());
 		double latencyNormal = getLatency(doublePair.getFirstSorted(), pTargetLowerBound, pTargetUpperBound);
 		//System.out.printf("latencyNormal = %f, latencyRemoved = %f\n", latencyNormal, latencyRemoved);
-		result = latencyNormal / latencyRemoved - 1; 
+		result = (latencyNormal -  latencyRemoved ) / latencyNormal; 
 	}
 
 	public double getThreshold() {
