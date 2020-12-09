@@ -41,6 +41,10 @@ class Analyzer {
 	HashMap<Double, ArrayList<String>> msrInfo;
 	HashMap<String, DoubleListPair> latencyPairs;
 	HashMap<String, DoubleListPair> msrPairs;
+
+	// Debug
+	long startTime;
+	long endTime;
 	
 	public Analyzer(TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) {
 		regValueToId = new HashMap<String, String>();
@@ -53,6 +57,8 @@ class Analyzer {
 		priorityList = new HashMap<>();
 		finalImpactValueResults = new HashMap<>();
 		finalFilteredReasons =  new HashMap<>();
+		startTime = 0;
+		endTime = 0;
 
 		this.switchInfo = switchInfo;
 		this.msrInfo  = msrInfo;
@@ -194,7 +200,10 @@ class Analyzer {
 			
 			// Only focus on the first requests 
 			if (switchIdx - switchStartTime < 3600 * 1e9 * windowLengthInHours * targetWindow) continue;
-			if (switchIdx - switchStartTime >= 3600 * 1e9 * (windowLengthInHours) * (targetWindow + 1)) break;
+			if (switchIdx - switchStartTime >= 3600 * 1e9 * (windowLengthInHours) * (targetWindow + 1)) {
+				break;
+			}
+			if (startTime == 0) startTime = System.nanoTime();
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
@@ -261,7 +270,9 @@ class Analyzer {
 			}
 			count++;
 		}
-		System.out.printf("#request = %d\n", count);
+		endTime = System.nanoTime();
+		System.out.printf("Parsing takes %f seconds\n", (endTime - startTime) / 1e9);
+		//System.out.printf("#request = %d\n", count);
 	}
 
 	//The first step
@@ -529,16 +540,13 @@ class Analyzer {
 			analyzer.targetWindow = Double.parseDouble(args[6]);
 		}
 
-
-		stime = System.nanoTime();
 		analyzer.getTestName(traceFilePath);
 		analyzer.readPriorityList();
 		analyzer.readRegValueToId(latencyPairs, msrPairs);
 		analyzer.readSwitchInfo(switchFilePath, msrFilePath, switchInfo, msrInfo);
 		analyzer.readVarResults(traceFilePath, switchInfo, msrInfo, latencyPairs, msrPairs);
-		etime = System.nanoTime();
-		System.out.printf("Parsing data takes %f seconds.\n", (etime - stime) / 1e9);
 
+		analyzer.startTime = System.nanoTime();
 		//First step: find out inflection points using regression approach
 		HashMap<String, ImpactValue> ivMap = analyzer.impactValueAnalysis(latencyPairs);
 
@@ -553,5 +561,7 @@ class Analyzer {
 		analyzer.generateOutputJaccardResults();
 
 		analyzer.generateOutputFinals();
+		analyzer.endTime = System.nanoTime();
+		System.out.printf("Analysis takes %f seconds\n", (analyzer.endTime - analyzer.startTime) / 1e9);
 	}
 }
