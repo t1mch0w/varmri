@@ -33,9 +33,9 @@ source latency.sh $l 2 > ${k}.txt
 fi 
 count=$((${count}+1))
 tmpn=$((${count}%10))
-#if [ "${tmpn}" -eq "0" ]
-#then
-#wait
-#fi
+if [ "${tmpn}" -eq "0" ]
+then
+wait
+fi
 done
 done

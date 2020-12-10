@@ -32,8 +32,11 @@ class ImpactValue extends Thread {
 
 		ArrayList<Integer> removedList = getRemovedList(doublePair.getSecond(), threshold);
 		//System.out.printf("Impact value starts to remove %d events of %d events (%f%%).\n", removedList.size(), doublePair.getSecond().size(), (double) removedList.size() / doublePair.getSecond().size());
-		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound, removedList.size());
-		double latencyNormal = getLatency(doublePair.getFirstSorted(), pTargetLowerBound, pTargetUpperBound);
+		//
+		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTarget, removedList.size());
+		double latencyNormal = getLatency(doublePair.getFirstSorted(), pTarget, 0);
+		//double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound, removedList.size());
+		//double latencyNormal = getLatency(doublePair.getFirstSorted(), pTargetLowerBound, pTargetUpperBound);
 		//System.out.printf("latencyNormal = %f, latencyRemoved = %f\n", latencyNormal, latencyRemoved);
 		result = (latencyNormal -  latencyRemoved ) / latencyNormal; 
 	}
@@ -68,6 +71,12 @@ class ImpactValue extends Thread {
 		}
 		Collections.sort(remainedLatencyList);
 		return remainedLatencyList;
+	}
+
+	public double getLatency(ArrayList<Double> latencyList, double pTarget, int numRemoved) {
+		int total = latencyList.size() - numRemoved;
+		int pos = (int)(pTarget * total) + numRemoved;
+		return latencyList.get(pos);
 	}
 
 	public double getLatency(ArrayList<Double> latencyList, double pTargetLowerBound, double pTargetUpperBound, int numRemoved) {

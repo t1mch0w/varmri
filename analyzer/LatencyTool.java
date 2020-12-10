@@ -33,9 +33,9 @@ class LatencyTool {
 		int topCount = 100;
 		int total = latList.size();
 	
-		result.add((double)latList.size());
+		result.add((double)total);
 
-		if (latList.size() < 100) {
+		if (total < 100) {
 			result.add(0.0);
 		}
 		else {
@@ -48,8 +48,13 @@ class LatencyTool {
 
 		for (Double p : target) {
 			//result.add(getLatencyByPercent(latList, p));
-			int pos = (int)(p * total);
-			result.add(latList.get(pos));
+			if (total == 0) {
+				result.add(0.0);
+			}
+			else {
+				int pos = (int)(p * total);
+				result.add(latList.get(pos));
+			}
 		}
 
 		double[] arr = new double[latList.size()]; 
@@ -177,12 +182,16 @@ class LatencyTool {
 			//if (switchIdx - switchStartTime >= 3600 * 1e9 * hourWindow) break;
 			// Decide window index and collect latency
 			int windowIdx = (int)((switchIdx - switchStartTime) / (3600 * 1e9 * hourWindow));
-			latLists.get(windowIdx).add(varResult.latency);
-			latLists.get(totalWindow).add(varResult.latency);
+			//latLists.get(windowIdx).add(varResult.latency);
+			//latLists.get(totalWindow).add(varResult.latency);
 
+			//softirq
 			//latLists.get(windowIdx).add(varResult.results[3]);
 			//latLists.get(totalWindow).add(varResult.results[3]);
-
+			
+			//waiting
+			latLists.get(windowIdx).add(varResult.results[1]);
+			latLists.get(totalWindow).add(varResult.results[1]);
 		}
 	}
 
