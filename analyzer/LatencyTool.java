@@ -52,7 +52,7 @@ class LatencyTool {
 			result.add(latList.get(pos));
 		}
 
-        double[] arr = new double[latList.size()]; 
+		double[] arr = new double[latList.size()]; 
 		int idx = 0;
 		for (Double d : latList) {
 			arr[idx++] = d;
@@ -177,11 +177,11 @@ class LatencyTool {
 			//if (switchIdx - switchStartTime >= 3600 * 1e9 * hourWindow) break;
 			// Decide window index and collect latency
 			int windowIdx = (int)((switchIdx - switchStartTime) / (3600 * 1e9 * hourWindow));
-			//latLists.get(windowIdx).add(varResult.latency);
-			//latLists.get(totalWindow).add(varResult.latency);
+			latLists.get(windowIdx).add(varResult.latency);
+			latLists.get(totalWindow).add(varResult.latency);
 
-			latLists.get(windowIdx).add(varResult.results[3]);
-			latLists.get(totalWindow).add(varResult.results[3]);
+			//latLists.get(windowIdx).add(varResult.results[3]);
+			//latLists.get(totalWindow).add(varResult.results[3]);
 
 		}
 	}

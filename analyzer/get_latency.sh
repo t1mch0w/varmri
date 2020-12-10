@@ -17,21 +17,25 @@ fi
 echo "start to analyze " ${k}
 if [ "$j" -eq "2" ]
 then
-source latency.sh $l 3.5 0 > ${k}.txt &
+#source latency.sh $l 3.5 0 > ${k}.txt &
+source latency.sh $l 3.5 0 > ${k}.txt
 elif [ "$j" -eq "3" ]
 then
-source latency.sh $l 5 2 > ${k}.txt &
+#source latency.sh $l 5 2 > ${k}.txt &
+source latency.sh $l 5 2 > ${k}.txt
 elif [ "$j" -eq "4" ]
 then
-source latency.sh $l 7 2 > ${k}.txt &
+#source latency.sh $l 7 2 > ${k}.txt &
+source latency.sh $l 7 2 > ${k}.txt
 else
-source latency.sh $l 2 > ${k}.txt &
+#source latency.sh $l 2 > ${k}.txt &
+source latency.sh $l 2 > ${k}.txt
 fi 
 count=$((${count}+1))
 tmpn=$((${count}%10))
-if [ "${tmpn}" -eq "0" ]
-then
-wait
-fi
+#if [ "${tmpn}" -eq "0" ]
+#then
+#wait
+#fi
 done
 done
