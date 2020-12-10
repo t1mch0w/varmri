@@ -1,14 +1,19 @@
 count=0
 #for j in 0 1 2 3 4 5 6 7
-for j in 7 
+for j in 0 1 2 3 4 5
+#for j in 7 
 do
 #for l in $(find /nfs/*type${j} -name "result_fake" | cut -f-4 -d"/")
-for l in $(find /nfs/opt/*type${j} -name "result_fake" | cut -f-4 -d"/")
-#for l in $(find /mnt/1205/*type${j} -name "result_fake" | cut -f-5 -d"/")
+#for l in $(find /nfs/opt/*type${j} -name "result_fake" | cut -f-4 -d"/")
+for l in $(find /mnt/*/*type${j} -name "result_fake" | cut -f-5 -d"/")
 #for l in $(find /mnt/1208/*type${j} -name "result_fake" | cut -f-5 -d"/")
 do
 #k=$(echo ${l} | awk -F"/" '{print $3}')
 k=$(echo ${l} | awk -F"/" '{print $4}')
+if [ -f "${k}.txt" ]
+then
+continue
+fi
 echo "start to analyze " ${k}
 if [ "$j" -eq "2" ]
 then

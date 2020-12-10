@@ -27,10 +27,11 @@ class LatencyTool {
 
 	public String getLatencyInfo(ArrayList<Double> latList, int windowIdx) {
 		ArrayList<Double> result = new ArrayList<Double>();
-		ArrayList<Double> target = new ArrayList<Double>(Arrays.asList(0.9999, 0.999, 0.99, 0.5));
+		ArrayList<Double> target = new ArrayList<Double>(Arrays.asList(0.9999, 0.999, 0.99, 0.9, 0.8, 0.7, 0.6, 0.5));
 		Collections.sort(latList);
 		double topTotal = 0;
 		int topCount = 100;
+		int total = latList.size();
 	
 		result.add((double)latList.size());
 
@@ -46,7 +47,9 @@ class LatencyTool {
 		}
 
 		for (Double p : target) {
-			result.add(getLatencyByPercent(latList, p));
+			//result.add(getLatencyByPercent(latList, p));
+			int pos = (int)(p * total);
+			result.add(latList.get(pos));
 		}
 
         double[] arr = new double[latList.size()]; 
@@ -174,8 +177,12 @@ class LatencyTool {
 			//if (switchIdx - switchStartTime >= 3600 * 1e9 * hourWindow) break;
 			// Decide window index and collect latency
 			int windowIdx = (int)((switchIdx - switchStartTime) / (3600 * 1e9 * hourWindow));
-			latLists.get(windowIdx).add(varResult.latency);
-			latLists.get(totalWindow).add(varResult.latency);
+			//latLists.get(windowIdx).add(varResult.latency);
+			//latLists.get(totalWindow).add(varResult.latency);
+
+			latLists.get(windowIdx).add(varResult.results[3]);
+			latLists.get(totalWindow).add(varResult.results[3]);
+
 		}
 	}
 
