@@ -59,10 +59,10 @@ class JaccardAnalysis extends Thread {
 		}
 	}
 
-	public ArrayList<Integer> getRemovedList(ArrayList<Double> eventValueList, double threshold) {
+	public ArrayList<Integer> getRemovedList(double[] eventValueList, double threshold) {
 		ArrayList<Integer> removedList = new ArrayList<>();
-		for (int i = 0; i < eventValueList.size(); i++) {
-			if (eventValueList.get(i) > threshold) {
+		for (int i = 0; i < eventValueList.length; i++) {
+			if (eventValueList[i] > threshold) {
 				removedList.add(i);	
 			}
 		}

@@ -18,11 +18,11 @@ class PropRelation extends Thread {
 	}
 
 	public void run() {
-		ArrayList<Double> first = pairs.getFirst();
-		ArrayList<Double> second = pairs.getSecond();
+		double[] first = pairs.getFirst();
+		double[] second = pairs.getSecond();
 		for (int i = 0 ; i < pairs.size(); i++) {
-			data[i][0] = first.get(i);
-			data[i][1] = second.get(i);
+			data[i][0] = first[i];
+			data[i][1] = second[i];
 		}
 		regression.addData(data);	
 	}

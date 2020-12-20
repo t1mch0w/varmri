@@ -1,65 +1,82 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 class DoubleListPair {
-	public ArrayList<Double> first;
-	public ArrayList<Double> second;
-	//public ArrayList<Double>[] sortedFields;
+	int lengthByDefault = 10000000;
+	int currLength;
+	public double[] first;
+	public double[] second;
 
-	public ArrayList<Double> firstSorted;
-	public ArrayList<Double> secondSorted;
+	public int firstIndex;
+	public int secondIndex;
+
+	public double[] firstSorted;
+	public double[] secondSorted;
 	
 	public DoubleListPair() {
-		first = new ArrayList<Double>();
-		second = new ArrayList<Double>();
-		//sortedFields = new ArrayList<Double>[2];
+		first = new double[lengthByDefault];
+		second = new double[lengthByDefault];
+		firstIndex = 0;
+		secondIndex = 0;
+		currLength = lengthByDefault;
 	}
 
 	public void addData(double firstElement, double secondElement) {
-		first.add(firstElement);
-		second.add(secondElement);
+		if (firstIndex >= currLength) {
+			double[] tmpFirst = first;
+			double[] tmpSecond = second;
+			first = new double[2 * currLength];
+			second = new double[2 * currLength];
+			System.arraycopy(tmpFirst, 0, first, 0, currLength); 
+			System.arraycopy(tmpSecond, 0, second, 0, currLength); 
+			currLength *= 2;
+		}
+		first[firstIndex++] = firstElement;
+		second[secondIndex++] = secondElement;
 	}
 
 	public void sort() {
-		firstSorted = new ArrayList<>(first);
-		secondSorted = new ArrayList<>(second);
-		Collections.sort(firstSorted);
-		Collections.sort(secondSorted);
+		firstSorted = first.clone();
+		secondSorted = second.clone();
+		Arrays.sort(firstSorted);
+		Arrays.sort(secondSorted);
 	}
 
 	public double[][] getDoubleArray(int column, int spos, int epos) {
-		ArrayList<Double> targetList = column == 0 ? firstSorted : secondSorted;
+		double[] targetList = column == 0 ? firstSorted : secondSorted;
 		int total = epos - spos;
 		double[][] doubleArray = new double[total][2];
 		for (int i = 0; i < total; i++) {
-			doubleArray[i][0] = targetList.get(i + spos);
+			doubleArray[i][0] = targetList[i + spos];
 			doubleArray[i][1] = i + spos;
 		}
 		return doubleArray;
 	}
 	
 	public void printOut() {
-		for (int i = 0; i < first.size(); i++) {
-			System.out.printf("%f %f\n", first.get(i), second.get(i));
+		for (int i = 0; i < first.length; i++) {
+			System.out.printf("%f %f\n", first[i], second[i]);
 		}
 	}
 
-	//public ArrayList<Double> getSortedArray(int column) {
-	//}
-
-	public ArrayList<Double> getFirst() {
+	public double[] getFirst() {
 		return first;
 	}
 
-	public ArrayList<Double> getSecond() {
+	public double[] getSecond() {
 		return second;
 	}
 
-	public ArrayList<Double> getFirstSorted() {
+	public double[] getFirstSorted() {
 		return firstSorted;
 	}
 
+	public double[] getSecondSorted() {
+		return secondSorted;
+	}
+
 	public int size() {
-		return first.size();
+		return firstIndex;
 	}
 }
