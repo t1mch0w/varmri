@@ -42,20 +42,28 @@ class JaccardAnalysis extends Thread {
 				remove1 = remove0;
 				remove0 = tmp;
 			}
-			HashSet<Integer> intersection = new HashSet<>(remove0);
 			HashSet<Integer> union = new HashSet<>(remove0);
+
 			union.addAll(remove1);
-			intersection.retainAll(remove1);
-	
-			if (union.size() == 0) {
+			if (union.size() == 0 || remove0.size() == 0 || remove1.size() == 0) {
 				result = 0;
+				return;
 			}
-			else {
-				result = 1.0 * intersection.size() / union.size();
+
+			BitSet bitSet = new BitSet(Collections.max(remove0));
+			BitSet bitSet1 = new BitSet(Collections.max(remove1));
+			for (int i = 0; i < remove0.size(); i++) {
+					bitSet.set(remove0.get(i));
 			}
+			for (int i = 0; i < remove1.size(); i++) {
+					bitSet1.set(remove1.get(i));
+			}
+			bitSet.and(bitSet1);
+			result = 1.0 * bitSet.cardinality() / union.size();
 	
 		} catch (Exception e) {
 			System.out.println("Exception caught in JaccardAnalysis().");
+            //e.printStackTrace(); 
 		}
 	}
 

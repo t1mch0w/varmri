@@ -3,7 +3,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 class DoubleListPair {
-	int lengthByDefault = 10000000;
+	//int lengthByDefault = 10000000;
+	int lengthByDefault = 1000;
 	int currLength;
 	public double[] first;
 	public double[] second;

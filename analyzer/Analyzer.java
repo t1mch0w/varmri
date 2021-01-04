@@ -227,6 +227,9 @@ class Analyzer {
 				DoubleListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
 				if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
 				tmpList.addData(varResult.latency, varResult.results[i]);
+				//if (msrInfo.get(switchIdx).get(eventIdx).equals("0x4321d0")) {
+				//	System.out.println(varResult.latency + " " + varResult.results[i]);
+				//}
 			}
 
 			// Add latency and Freq
