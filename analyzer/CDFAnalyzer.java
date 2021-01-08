@@ -113,17 +113,24 @@ public class CDFAnalyzer {
     public double getTurningPointAt(int lower,int target){
         findWithoutAdjust();
 
+        double maxInRange = -1;
+
         for(int i=0;i<turningPointsX.size();i++){
             double point = turningPointsX.get(i);
             double lat = turningPointsY.get(i);
             if (point > lower && point <= target){
 		    turningPointValue = lat;
+            maxInRange = Math.max(lat,maxInRange);
 		    turningPointPos = point;
             }
             else if (Double.isNaN(turningPointValue) && point >= target){
-		    turningPointValue = lat;
+            turningPointValue = lat;
 		    turningPointPos = point;
-		    break;
+            if (lat != maxInRange){
+                // if there isn't one greater than maxInRange, will return
+                // the last turning point at the end of for loop.
+                break;
+            }
             }
         }
         return turningPointValue;
