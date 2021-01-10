@@ -8,7 +8,6 @@ class ImpactValue extends Thread {
 	double pTargetUpperBound;
 	double result;
 	double removedPercent;
-	
 
 	public ImpactValue(DoubleListPair doublePair, double pTarget, double pTargetLowerBound, double pTargetUpperBound) {
 		this.doublePair = doublePair;
@@ -31,10 +30,9 @@ class ImpactValue extends Thread {
 			System.out.println("Exception caught in curveFit().");
 		}
 
-		ArrayList<Integer> removedList = getRemovedList(doublePair.getSecond(), threshold);
+		ArrayList<Integer> removedList = getRemovedList(doublePair.getSecond(), doublePair.size(), threshold);
 		//System.out.printf("Impact value starts to remove %d events of %d events (%f%%).\n", removedList.size(), doublePair.getSecond().size(), (double) removedList.size() / doublePair.getSecond().size());
-		//
-		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTarget, removedList.size());
+		double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), doublePair.size(), removedList), pTarget, removedList.size());
 		double latencyNormal = getLatency(doublePair.getFirstSorted(), pTarget, 0);
 		//double latencyRemoved = getLatency(getLatencyList(doublePair.getFirst(), removedList), pTargetLowerBound, pTargetUpperBound, removedList.size());
 		//double latencyNormal = getLatency(doublePair.getFirstSorted(), pTargetLowerBound, pTargetUpperBound);
@@ -54,9 +52,9 @@ class ImpactValue extends Thread {
 		return removedPercent;
 	}
 
-	public ArrayList<Integer> getRemovedList(double[] eventValueList, double threshold) {
+	public ArrayList<Integer> getRemovedList(double[] eventValueList, int size, double threshold) {
 		ArrayList<Integer> removedList = new ArrayList<>();
-		for (int i = 0; i < eventValueList.length; i++) {
+		for (int i = 0; i < size; i++) {
 			if (eventValueList[i] > threshold) {
 				removedList.add(i);	
 			}
@@ -64,8 +62,9 @@ class ImpactValue extends Thread {
 		return removedList;
 	}
 
-	public double[] getLatencyList(double[] latencyList, ArrayList<Integer> removedList) {
-		double[] remainedLatencyList = latencyList.clone();
+	public double[] getLatencyList(double[] latencyList, int size, ArrayList<Integer> removedList) {
+		double[] remainedLatencyList = new double[size];
+		System.arraycopy(latencyList, 0, remainedLatencyList, 0, size);
 		for (int removePos : removedList) {
 			remainedLatencyList[removePos] = 0;
 		}
