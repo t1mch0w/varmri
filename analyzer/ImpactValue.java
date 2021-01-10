@@ -25,6 +25,7 @@ class ImpactValue extends Thread {
 			cf.join();
 			threshold = cf.getResult();
 			removedPercent = cf.getRemovedPercent();
+			//System.out.printf("threshold = %f, removedPercent = %f\n", threshold, removedPercent);
 			//mapInflectionPoints.put(key, cfMap.get(key).getResult());
 		} catch (Exception e) {
 			System.out.println("Exception caught in curveFit().");

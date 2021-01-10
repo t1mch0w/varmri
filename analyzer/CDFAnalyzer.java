@@ -133,6 +133,11 @@ public class CDFAnalyzer {
             }
             }
         }
+
+		//for (int i = 0; i < allData.length; i++) {
+		//	System.out.println(allData[i][0] + " " + allData[i][1]);
+		//}
+		//System.out.println(turningPointValue);
         return turningPointValue;
     }
 

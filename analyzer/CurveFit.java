@@ -53,7 +53,7 @@ class CurveFit extends Thread {
 	}
 
 	public void run() {
-		double[][] allData = pairs.getDoubleArray(targetColumn,0,totalDataPoints-1);
+		double[][] allData = pairs.getDoubleArray(targetColumn, 0, totalDataPoints - 1);
 		CDFAnalyzer cdfAnalyzer = new CDFAnalyzer(allData);
 		result = cdfAnalyzer.getTurningPointAt(lowerBound, upperBound);
 		removedPercent = 1 - cdfAnalyzer.getTurningPointPercent();

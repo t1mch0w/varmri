@@ -30,6 +30,7 @@ class Analyzer {
 	HashMap<String, Double> impactValueResults;
 	HashMap<String, Double> removedPercentResults;
 	HashMap<String, Double> propRelationResults;
+	HashMap<String, Double> rangeAnalysisResults;
 	HashMap<String, Double> jaccardResults;
 	HashMap<String, Double> curveFittingThresholds;
 
@@ -52,6 +53,7 @@ class Analyzer {
 		impactValueResults = new HashMap<String, Double>();
 		removedPercentResults = new HashMap<String, Double>();
 		propRelationResults = new HashMap<String, Double>();
+		rangeAnalysisResults = new HashMap<String, Double>();
 		jaccardResults = new HashMap<String, Double>();
 		curveFittingThresholds = new HashMap<>();
 		priorityList = new HashMap<>();
@@ -227,9 +229,6 @@ class Analyzer {
 				DoubleListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
 				if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
 				tmpList.addData(varResult.latency, varResult.results[i]);
-				//if (msrInfo.get(switchIdx).get(eventIdx).equals("0x4321d0")) {
-				//	System.out.println(varResult.latency + " " + varResult.results[i]);
-				//}
 			}
 
 			// Add latency and Freq
@@ -326,6 +325,15 @@ class Analyzer {
 		fileWriter.close();
 	}
 
+	public void generateOutputRangeResults() throws IOException {
+		FileWriter fileWriter = new FileWriter(testName + "_range_result.txt");
+		for (String key : rangeAnalysisResults.keySet()) {
+			fileWriter.write(String.format("[Range Result] %s %f\n", regValueToId.get(key), rangeAnalysisResults.get(key)));
+		}
+		fileWriter.close();
+	}
+	
+
 	//The third step
 	public HashMap<String, JaccardAnalysis> jaccardAnalysis(HashMap<String, DoubleListPair> msrPairs) {
 		//long stime = System.nanoTime();
@@ -346,6 +354,17 @@ class Analyzer {
 		return jaMap;
 	}
 
+	//Range Analysis
+	public HashMap<String, RangeAnalysis> rangeAnalysis(HashMap<String, DoubleListPair> latencyPairs) {
+		HashMap<String, RangeAnalysis> rMap = new HashMap<>();
+		for (String key : latencyPairs.keySet()) {
+			RangeAnalysis r = new RangeAnalysis(latencyPairs.get(key), pTargetLowerBound, pTargetUpperBound);
+			r.start();
+			rMap.put(key, r);
+		}
+		return rMap;
+	}
+
 	public void generateOutputJaccardResults() throws IOException {
 		FileWriter fileWriter = new FileWriter(testName + "_jaccard_similarity.txt");
 		for (String key : jaccardResults.keySet()) {
@@ -356,7 +375,7 @@ class Analyzer {
 	}
 
 	//Join function
-	public void joinAndStartJaccard(HashMap<String, ImpactValue> ivMap, HashMap<String, PropRelation> prMap) {
+	public void joinAndStartJaccard(HashMap<String, ImpactValue> ivMap, HashMap<String, PropRelation> prMap, HashMap<String, RangeAnalysis> rMap) {
 		try {
 			for (String key : ivMap.keySet()){
 					ImpactValue iv = ivMap.get(key);
@@ -370,6 +389,12 @@ class Analyzer {
 					PropRelation pr = prMap.get(key);
 					pr.join();
 					propRelationResults.put(key, pr.getResult());
+			}
+
+			for (String key : rMap.keySet()) {
+					RangeAnalysis r = rMap.get(key);
+					r.join();
+					rangeAnalysisResults.put(key, r.getResult());
 			}
 
 			//Third step: get jaccard similarity
@@ -556,11 +581,15 @@ class Analyzer {
 		//Second step: get proportional relationship
 		HashMap<String, PropRelation> prMap = analyzer.propRelationshipAnalysis(msrPairs);
 
+
+		HashMap<String, RangeAnalysis> rMap = analyzer.rangeAnalysis(latencyPairs);
+
 		//Wait for all tasks finished and start the third step
-		analyzer.joinAndStartJaccard(ivMap, prMap);
+		analyzer.joinAndStartJaccard(ivMap, prMap, rMap);
 
 		analyzer.generateOutputImpactValue();
 		analyzer.generateOutputPropRelation();
+		analyzer.generateOutputRangeResults();
 		analyzer.generateOutputJaccardResults();
 
 		analyzer.generateOutputFinals();

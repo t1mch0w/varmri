@@ -37,11 +37,31 @@ class DoubleListPair {
 		second[secondIndex++] = secondElement;
 	}
 
+	public void reverseArray(double[] arr) {
+		int i = 0;
+		int j = arr.length - 1;
+		double tmp = 0;
+
+		while (i < j) {
+			tmp = arr[i];
+			arr[i] = arr[j];
+			arr[j] = tmp;
+			i++;
+			j--;
+		}	
+	}
+
+	public double[] sortArray(double[] array) {
+		double[] res = new double[firstIndex];
+		System.arraycopy(array, 0, res, 0, firstIndex);
+		Arrays.sort(res);
+		//reverseArray(res);
+		return res;
+	}
+
 	public void sort() {
-		firstSorted = first.clone();
-		secondSorted = second.clone();
-		Arrays.sort(firstSorted);
-		Arrays.sort(secondSorted);
+		firstSorted = sortArray(first);
+		secondSorted = sortArray(second);
 	}
 
 	public double[][] getDoubleArray(int column, int spos, int epos) {
