@@ -1,5 +1,6 @@
 all:
 	javac -cp commons-math3-3.6.1.jar:. DoubleListPair.java
+	javac -cp commons-math3-3.6.1.jar:. DoubleList.java
 	javac -cp commons-math3-3.6.1.jar:. CurveFit.java
 	javac -cp commons-math3-3.6.1.jar:. ImpactValue.java
 	javac -cp commons-math3-3.6.1.jar:. PropRelation.java

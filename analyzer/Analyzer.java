@@ -43,6 +43,8 @@ class Analyzer {
 	HashMap<String, DoubleListPair> latencyPairs;
 	HashMap<String, DoubleListPair> msrPairs;
 
+	DoubleList dList;
+
 	// Debug
 	long startTime;
 	long endTime;
@@ -61,6 +63,8 @@ class Analyzer {
 		finalFilteredReasons =  new HashMap<>();
 		startTime = 0;
 		endTime = 0;
+
+		dList = new DoubleList();
 
 		this.switchInfo = switchInfo;
 		this.msrInfo  = msrInfo;
@@ -270,6 +274,9 @@ class Analyzer {
 					tmpList.addData(varResult.results[i], varResult.results[j]);
 				}
 			}
+
+			dList.add(varResult.latency);			
+
 			count++;
 		}
 		endTime = System.nanoTime();
@@ -332,7 +339,15 @@ class Analyzer {
 		}
 		fileWriter.close();
 	}
-	
+
+	public void generateLatencyResults() throws IOException {
+		FileWriter fileWriter = new FileWriter(testName + "_latency.txt");
+		double[] percentList = {0.999, 0.99, 0.5};
+		for (double percent : percentList) {
+			fileWriter.write(String.format("P%.2f %f\n", percent*100, dList.getResult(percent)));
+		}
+		fileWriter.close();
+	}
 
 	//The third step
 	public HashMap<String, JaccardAnalysis> jaccardAnalysis(HashMap<String, DoubleListPair> msrPairs) {
@@ -591,6 +606,8 @@ class Analyzer {
 		analyzer.generateOutputPropRelation();
 		analyzer.generateOutputRangeResults();
 		analyzer.generateOutputJaccardResults();
+
+		analyzer.generateLatencyResults();
 
 		analyzer.generateOutputFinals();
 		analyzer.endTime = System.nanoTime();
