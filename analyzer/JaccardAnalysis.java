@@ -1,18 +1,18 @@
 import java.util.*;
 
 class JaccardAnalysis extends Thread {
-	DoubleListPair pairs;
-	double result;
-	double thre0;
-	double thre1;
+	FloatListPair pairs;
+	float result;
+	float thre0;
+	float thre1;
 
-	public JaccardAnalysis(DoubleListPair pairs, double thre0, double thre1) {
+	public JaccardAnalysis(FloatListPair pairs, float thre0, float thre1) {
 		this.pairs = pairs;
 		this.thre0 = thre0;
 		this.thre1 = thre1;
 	}
 
-	public double getResult() {
+	public float getResult() {
 		return result;
 	}
 
@@ -59,7 +59,7 @@ class JaccardAnalysis extends Thread {
 					bitSet1.set(remove1.get(i));
 			}
 			bitSet.and(bitSet1);
-			result = 1.0 * bitSet.cardinality() / union.size();
+			result = 1.0f * bitSet.cardinality() / union.size();
 	
 		} catch (Exception e) {
 			System.out.println("Exception caught in JaccardAnalysis().");
@@ -67,7 +67,7 @@ class JaccardAnalysis extends Thread {
 		}
 	}
 
-	public ArrayList<Integer> getRemovedList(double[] eventValueList, double threshold) {
+	public ArrayList<Integer> getRemovedList(float[] eventValueList, float threshold) {
 		ArrayList<Integer> removedList = new ArrayList<>();
 		for (int i = 0; i < eventValueList.length; i++) {
 			if (eventValueList[i] > threshold) {

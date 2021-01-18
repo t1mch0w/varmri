@@ -2,33 +2,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
-class DoubleListPair {
+class FloatListPair {
 	//int lengthByDefault = 10000000;
 	int lengthByDefault = 1000;
 	int currLength;
-	public double[] first;
-	public double[] second;
+	public float[] first;
+	public float[] second;
 
 	public int firstIndex;
 	public int secondIndex;
 
-	public double[] firstSorted;
-	public double[] secondSorted;
+	public float[] firstSorted;
+	public float[] secondSorted;
 	
-	public DoubleListPair() {
-		first = new double[lengthByDefault];
-		second = new double[lengthByDefault];
+	public FloatListPair() {
+		first = new float[lengthByDefault];
+		second = new float[lengthByDefault];
 		firstIndex = 0;
 		secondIndex = 0;
 		currLength = lengthByDefault;
 	}
 
-	public void addData(double firstElement, double secondElement) {
+	public void addData(float firstElement, float secondElement) {
 		if (firstIndex >= currLength) {
-			double[] tmpFirst = first;
-			double[] tmpSecond = second;
-			first = new double[2 * currLength];
-			second = new double[2 * currLength];
+			float[] tmpFirst = first;
+			float[] tmpSecond = second;
+			first = new float[2 * currLength];
+			second = new float[2 * currLength];
 			System.arraycopy(tmpFirst, 0, first, 0, currLength); 
 			System.arraycopy(tmpSecond, 0, second, 0, currLength); 
 			currLength *= 2;
@@ -37,10 +37,10 @@ class DoubleListPair {
 		second[secondIndex++] = secondElement;
 	}
 
-	public void reverseArray(double[] arr) {
+	public void reverseArray(float[] arr) {
 		int i = 0;
 		int j = arr.length - 1;
-		double tmp = 0;
+		float tmp = 0;
 
 		while (i < j) {
 			tmp = arr[i];
@@ -51,8 +51,8 @@ class DoubleListPair {
 		}	
 	}
 
-	public double[] sortArray(double[] array) {
-		double[] res = new double[firstIndex];
+	public float[] sortArray(float[] array) {
+		float[] res = new float[firstIndex];
 		System.arraycopy(array, 0, res, 0, firstIndex);
 		Arrays.sort(res);
 		//reverseArray(res);
@@ -64,15 +64,15 @@ class DoubleListPair {
 		secondSorted = sortArray(second);
 	}
 
-	public double[][] getDoubleArray(int column, int spos, int epos) {
-		double[] targetList = column == 0 ? firstSorted : secondSorted;
+	public float[][] getFloatArray(int column, int spos, int epos) {
+		float[] targetList = column == 0 ? firstSorted : secondSorted;
 		int total = epos - spos;
-		double[][] doubleArray = new double[total][2];
+		float[][] floatArray = new float[total][2];
 		for (int i = 0; i < total; i++) {
-			doubleArray[i][0] = targetList[i + spos];
-			doubleArray[i][1] = i + spos;
+			floatArray[i][0] = targetList[i + spos];
+			floatArray[i][1] = i + spos;
 		}
-		return doubleArray;
+		return floatArray;
 	}
 	
 	public void printOut() {
@@ -81,19 +81,19 @@ class DoubleListPair {
 		}
 	}
 
-	public double[] getFirst() {
+	public float[] getFirst() {
 		return first;
 	}
 
-	public double[] getSecond() {
+	public float[] getSecond() {
 		return second;
 	}
 
-	public double[] getFirstSorted() {
+	public float[] getFirstSorted() {
 		return firstSorted;
 	}
 
-	public double[] getSecondSorted() {
+	public float[] getSecondSorted() {
 		return secondSorted;
 	}
 

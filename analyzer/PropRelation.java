@@ -3,23 +3,23 @@ import java.util.ArrayList;
 
 class PropRelation extends Thread {
 	double[][] data;
-	DoubleListPair pairs;
+	FloatListPair pairs;
 	SimpleRegression regression;
-	double rSquare = 0;
+	float rSquare = 0;
 
-	public PropRelation(DoubleListPair pairs) {
+	public PropRelation(FloatListPair pairs) {
 		this.pairs = pairs;	
 		this.data = new double[pairs.size()][2];
 		regression = new SimpleRegression(false);
 	}
 
-	public double getResult() {
-		return regression.getRSquare();
+	public float getResult() {
+		return (float)(regression.getRSquare());
 	}
 
 	public void run() {
-		double[] first = pairs.getFirst();
-		double[] second = pairs.getSecond();
+		float[] first = pairs.getFirst();
+		float[] second = pairs.getSecond();
 		for (int i = 0 ; i < pairs.size(); i++) {
 			data[i][0] = first[i];
 			data[i][1] = second[i];

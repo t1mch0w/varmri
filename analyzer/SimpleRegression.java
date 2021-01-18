@@ -16,19 +16,19 @@ public class SimpleRegression {
 
 
     /** sum of x values */
-    private double sumX = 0d;
+    private float sumX = 0f;
 
     /** sum of x square */
-    private double sumXX = 0d;
+    private float sumXX = 0f;
 
     /** sum of y values */
-    private double sumY = 0d;
+    private float sumY = 0f;
 
     /** sum of y square */
-    private double sumYY = 0d;
+    private float sumYY = 0f;
 
     /** sum of products */
-    private double sumXY = 0d;
+    private float sumXY = 0f;
 
     /** number of observations */
     private long n = 0;
@@ -59,7 +59,7 @@ public class SimpleRegression {
      * @param x independent variable value
      * @param y dependent variable value
      */
-    public void addData(final double x,final double y) {
+    public void addData(final float x,final float y) {
             sumXX += x * x ;
             sumYY += y * y ;
             sumXY += x * y ;
@@ -79,8 +79,8 @@ public class SimpleRegression {
      * @param data array of observations to be added
      * greater than or equal to 2
      */
-    public void addData(final double[][] data) {
-        for (double[] datum : data) {
+    public void addData(final float[][] data) {
+        for (float[] datum : data) {
             assert datum.length == 2 : "Err: each observation should have two values";
             addData(datum[0], datum[1]);
         }
@@ -124,17 +124,17 @@ public class SimpleRegression {
      * <strong>Preconditions</strong>: <ul>
      * <li>At least two observations (with at least two different x values)
      * must have been added before invoking this method. If this method is
-     * invoked before a model can be estimated, <code>Double,NaN</code> is
+     * invoked before a model can be estimated, <code>Float,NaN</code> is
      * returned.
      * </li></ul></p>
      *
      * @return r-square
      */
-    public double getRSquare() {
-        double a = getSlope();
-        double b = getIntercept();
-        double num = -sumY*sumY-n*a*a*sumXX-2*n*a*b*sumX-n*n*b*b+2*n*a*sumXY+2*n*b*sumY;
-        double den = n*sumYY-sumY*sumY;
+    public float getRSquare() {
+        float a = getSlope();
+        float b = getIntercept();
+        float num = -sumY*sumY-n*a*a*sumXX-2*n*a*b*sumX-n*n*b*b+2*n*a*sumXY+2*n*b*sumY;
+        float den = n*sumYY-sumY*sumY;
         return num/den;
     }
 
@@ -145,16 +145,16 @@ public class SimpleRegression {
      *
      * @param reg model to append data from
      */
-    public double getAppendPartialRSquare(SimpleRegression reg){
+    public float getAppendPartialRSquare(SimpleRegression reg){
         append(reg);
-        double a = getSlope();
-        double b = getIntercept();
+        float a = getSlope();
+        float b = getIntercept();
         remove(reg);
-        double y_bar = (sumY+reg.sumY)/(n+reg.n);
-        double sum_yhat_2 = a*a*reg.sumXX+2*a*b*reg.sumX+reg.n*b*b;
-        double sum_y_yhat = a*reg.sumXY+b*reg.sumY;
-        double num = reg.n*y_bar*y_bar-2*y_bar*reg.sumY-sum_yhat_2+2*sum_y_yhat;
-        double den = reg.sumYY-2*y_bar*reg.sumY+reg.n*y_bar*y_bar;
+        float y_bar = (sumY+reg.sumY)/(n+reg.n);
+        float sum_yhat_2 = a*a*reg.sumXX+2*a*b*reg.sumX+reg.n*b*b;
+        float sum_y_yhat = a*reg.sumXY+b*reg.sumY;
+        float num = reg.n*y_bar*y_bar-2*y_bar*reg.sumY-sum_yhat_2+2*sum_y_yhat;
+        float den = reg.sumYY-2*y_bar*reg.sumY+reg.n*y_bar*y_bar;
         return num/den;
     }
 
@@ -165,9 +165,9 @@ public class SimpleRegression {
      *
      * @param reg model to append data from
      */
-    public double getAppendFullRSquare(SimpleRegression reg){
+    public float getAppendFullRSquare(SimpleRegression reg){
         append(reg);
-        double rSquare = getRSquare();
+        float rSquare = getRSquare();
         remove(reg);
         return rSquare;
     }
@@ -186,7 +186,7 @@ public class SimpleRegression {
      * @param x independent variable value
      * @param y dependent variable value
      */
-    public void removeData(final double x,final double y) {
+    public void removeData(final float x,final float y) {
         if (n > 0) {
             sumXX -= x * x;
             sumYY -= y * y;
@@ -211,7 +211,7 @@ public class SimpleRegression {
      *
      * @param data array of observations to be removed
      */
-    public void removeData(double[][] data) {
+    public void removeData(float[][] data) {
         for (int i = 0; i < data.length && n > 0; i++) {
             assert data[i].length == 2 :"Err: each observation should have two values";
             removeData(data[i][0], data[i][1]);
@@ -222,11 +222,11 @@ public class SimpleRegression {
      * Clears all data from the model.
      */
     public void clear() {
-        sumX = 0d;
-        sumXX = 0d;
-        sumY = 0d;
-        sumYY = 0d;
-        sumXY = 0d;
+        sumX = 0f;
+        sumXX = 0f;
+        sumY = 0f;
+        sumYY = 0f;
+        sumXY = 0f;
         n = 0;
     }
 
@@ -249,14 +249,14 @@ public class SimpleRegression {
      * <strong>Preconditions</strong>: <ul>
      * <li>At least two observations (with at least two different x values)
      * must have been added before invoking this method. If this method is
-     * invoked before a model can be estimated, <code>Double,NaN</code> is
+     * invoked before a model can be estimated, <code>Float,NaN</code> is
      * returned.
      * </li></ul></p>
      *
      * @param x input <code>x</code> value
      * @return predicted <code>y</code> value
      */
-    public double predict(final double x) {
+    public float predict(final float x) {
         if (hasIntercept) {
             return getIntercept() + getSlope() * x;
         }else{
@@ -270,11 +270,11 @@ public class SimpleRegression {
      * @return the intercept of the regression line if the model includes an
      * intercept; 0 otherwise
      */
-    public double getIntercept() {
+    public float getIntercept() {
         if (hasIntercept){
             return (sumXX*sumY-sumX*sumXY)/(n*sumXX-sumX*sumX);
         }else{
-            return 0d;
+            return 0f;
         }
     }
 
@@ -298,15 +298,15 @@ public class SimpleRegression {
     * <strong>Preconditions</strong>: <ul>
     * <li>At least two observations (with at least two different x values)
     * must have been added before invoking this method. If this method is
-    * invoked before a model can be estimated, <code>Double.NaN</code> is
+    * invoked before a model can be estimated, <code>Float.NaN</code> is
     * returned.
     * </li></ul></p>
     *
     * @return the slope of the regression line
     */
-    public double getSlope() {
+    public float getSlope() {
         if (n < 2) {
-            return Double.NaN; //not enough data
+            return Float.NaN; //not enough data
         }
         if (hasIntercept){
             return (n*sumXY-sumY*sumX)/(n*sumXX-sumX*sumX);

@@ -1,10 +1,10 @@
 class RangeAnalysis extends Thread {
-	DoubleListPair eventPairs;
-	double pTargetLowerBound;
-	double pTargetUpperBound;
-	double result = 0.0;
+	FloatListPair eventPairs;
+	float pTargetLowerBound;
+	float pTargetUpperBound;
+	float result = 0.0f;
 
-	public RangeAnalysis(DoubleListPair eventPairs, double pTargetLowerBound, double pTargetUpperBound) {
+	public RangeAnalysis(FloatListPair eventPairs, float pTargetLowerBound, float pTargetUpperBound) {
 		this.eventPairs = eventPairs;
 		this.pTargetLowerBound = pTargetLowerBound;
 		this.pTargetUpperBound = pTargetUpperBound;
@@ -16,12 +16,12 @@ class RangeAnalysis extends Thread {
 		int startIdx = (int)(pTargetLowerBound * numOfEvent);
 		int endIdx = (int)(pTargetUpperBound * numOfEvent);
 
-		double[] latency = eventPairs.getFirst();
-		double[] event = eventPairs.getSecond();
-		double[] latencySorted = eventPairs.getFirstSorted();
+		float[] latency = eventPairs.getFirst();
+		float[] event = eventPairs.getSecond();
+		float[] latencySorted = eventPairs.getFirstSorted();
 
-		double startValue = latencySorted[startIdx];
-		double endValue = latencySorted[endIdx];
+		float startValue = latencySorted[startIdx];
+		float endValue = latencySorted[endIdx];
 		for (int i = 0; i < numOfEvent; i++) {
 			if (latency[i] >= startValue && latency[i] <= endValue) {
 				result += event[i];
@@ -31,7 +31,7 @@ class RangeAnalysis extends Thread {
 		result /= total;
 	}
 
-	public double getResult() {
+	public float getResult() {
 		return result;
 	}
 }

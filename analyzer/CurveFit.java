@@ -1,28 +1,28 @@
 class CurveFit extends Thread {
 	int numOfSegments = 1000;
-	double slopeThreshold = 0.01;
+	float slopeThreshold = 0.01f;
 
-	DoubleListPair pairs;
-	double pTarget = 0;
-	double pTargetLowerBound = 0;
-	double pTargetUpperBound = 0;
-	double delta = 0.02;
+	FloatListPair pairs;
+	float pTarget = 0;
+	float pTargetLowerBound = 0;
+	float pTargetUpperBound = 0;
+	float delta = 0.02f;
 	int totalDataPoints = 0;
 	int numOfDataPoints = 0; 
 	int targetColumn = 0;
 	int lowerBound = 0;
 	int upperBound = 0;
-	double result;
-	double removedPercent;
+	float result;
+	float removedPercent;
 
 	public CurveFit() {
 	}
 
-	public CurveFit(DoubleListPair pairs, double pTarget, int targetColumn) {
-		this(1000, 0.01, pairs, pTarget, targetColumn);
+	public CurveFit(FloatListPair pairs, float pTarget, int targetColumn) {
+		this(1000, 0.01f, pairs, pTarget, targetColumn);
 	}
 
-	public CurveFit(int numOfSegments, double slopeThreshold, DoubleListPair pairs, double pTarget, int targetColumn) {
+	public CurveFit(int numOfSegments, float slopeThreshold, FloatListPair pairs, float pTarget, int targetColumn) {
 		this.numOfSegments = numOfSegments;
 		this.slopeThreshold = slopeThreshold;
 		this.pairs = pairs;
@@ -44,16 +44,16 @@ class CurveFit extends Thread {
 	}
 
 	// Get results
-	public double getResult() {
+	public float getResult() {
 		return result;
 	}
 
-	public double getRemovedPercent() {
+	public float getRemovedPercent() {
 		return removedPercent; 
 	}
 
 	public void run() {
-		double[][] allData = pairs.getDoubleArray(targetColumn, 0, totalDataPoints - 1);
+		float[][] allData = pairs.getFloatArray(targetColumn, 0, totalDataPoints - 1);
 		CDFAnalyzer cdfAnalyzer = new CDFAnalyzer(allData);
 		result = cdfAnalyzer.getTurningPointAt(lowerBound, upperBound);
 		removedPercent = 1 - cdfAnalyzer.getTurningPointPercent();

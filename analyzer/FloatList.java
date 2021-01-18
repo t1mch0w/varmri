@@ -2,36 +2,36 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
-class DoubleList {
+class FloatList {
 	//int lengthByDefault = 10000000;
 	int lengthByDefault = 1000;
 	int currLength;
-	public double[] first;
+	public float[] first;
 
 	public int firstIndex;
 
-	public double[] firstSorted;
+	public float[] firstSorted;
 	
-	public DoubleList() {
-		first = new double[lengthByDefault];
+	public FloatList() {
+		first = new float[lengthByDefault];
 		firstIndex = 0;
 		currLength = lengthByDefault;
 	}
 
-	public void add(double firstElement) {
+	public void add(float firstElement) {
 		if (firstIndex >= currLength) {
-			double[] tmpFirst = first;
-			first = new double[2 * currLength];
+			float[] tmpFirst = first;
+			first = new float[2 * currLength];
 			System.arraycopy(tmpFirst, 0, first, 0, currLength); 
 			currLength *= 2;
 		}
 		first[firstIndex++] = firstElement;
 	}
 
-	public void reverseArray(double[] arr) {
+	public void reverseArray(float[] arr) {
 		int i = 0;
 		int j = arr.length - 1;
-		double tmp = 0;
+		float tmp = 0;
 
 		while (i < j) {
 			tmp = arr[i];
@@ -42,8 +42,8 @@ class DoubleList {
 		}	
 	}
 
-	public double[] sortArray(double[] array) {
-		double[] res = new double[firstIndex];
+	public float[] sortArray(float[] array) {
+		float[] res = new float[firstIndex];
 		System.arraycopy(array, 0, res, 0, firstIndex);
 		Arrays.sort(res);
 		return res;
@@ -53,7 +53,7 @@ class DoubleList {
 		firstSorted = sortArray(first);
 	}
 
-	public double getResult(double percent) {
+	public float getResult(float percent) {
 		this.sort();
 		int pos = (int)(percent * firstSorted.length);
 		return firstSorted[pos];
@@ -65,11 +65,11 @@ class DoubleList {
 		}
 	}
 
-	public double[] getFirst() {
+	public float[] getFirst() {
 		return first;
 	}
 
-	public double[] getFirstSorted() {
+	public float[] getFirstSorted() {
 		return firstSorted;
 	}
 

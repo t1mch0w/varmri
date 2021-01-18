@@ -7,36 +7,36 @@ import org.apache.commons.math3.stat.StatUtils;
 
 class LatencyTool {
 	int filterType = -1;
-	double hourWindow = 0.0;
+	float hourWindow = 0.0f;
 	int totalWindow = 0;
-	static double CPUFREQ = 2.2;
-	ArrayList<ArrayList<Double>> latLists = null;
+	static float CPUFREQ = 2.2f;
+	ArrayList<ArrayList<Float>> latLists = null;
 	String subDir = null;
 	int CDFIdx = -1;
 
 	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE");
 
-	public LatencyTool(double hourWindow) {
+	public LatencyTool(float hourWindow) {
 		this.hourWindow = hourWindow;
 		latLists = new ArrayList<>();
 		totalWindow = (int)(15 / hourWindow);
 		for (int i = 0; i < totalWindow + 1; i++) {
-			latLists.add(new ArrayList<Double>());
+			latLists.add(new ArrayList<Float>());
 		}
 	}
 
-	public String getLatencyInfo(ArrayList<Double> latList, int windowIdx) {
-		ArrayList<Double> result = new ArrayList<Double>();
-		ArrayList<Double> target = new ArrayList<Double>(Arrays.asList(0.9999, 0.999, 0.99, 0.9, 0.8, 0.7, 0.6, 0.5));
+	public String getLatencyInfo(ArrayList<Float> latList, int windowIdx) {
+		ArrayList<Float> result = new ArrayList<Float>();
+		ArrayList<Float> target = new ArrayList<Float>(Arrays.asList(0.9999f, 0.999f, 0.99f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f));
 		Collections.sort(latList);
-		double topTotal = 0;
+		float topTotal = 0.0f;
 		int topCount = 100;
 		int total = latList.size();
 	
-		result.add((double)total);
+		result.add((float)total);
 
 		if (total < 100) {
-			result.add(0.0);
+			result.add(0.0f);
 		}
 		else {
 			for (int i = latList.size() - 1; i >= latList.size() - topCount + 1; i--) {
@@ -46,10 +46,10 @@ class LatencyTool {
 			result.add(topTotal / topCount);
 		}
 
-		for (Double p : target) {
+		for (Float p : target) {
 			//result.add(getLatencyByPercent(latList, p));
 			if (total == 0) {
-				result.add(0.0);
+				result.add(0.0f);
 			}
 			else {
 				int pos = (int)(p * total);
@@ -59,13 +59,13 @@ class LatencyTool {
 
 		double[] arr = new double[latList.size()]; 
 		int idx = 0;
-		for (Double d : latList) {
+		for (Float d : latList) {
 			arr[idx++] = d;
 		}
 
-		Double mean = StatUtils.mean(arr);
-		Double var = StatUtils.variance(arr);
-		Double cov = Math.sqrt(StatUtils.variance(arr)) / StatUtils.mean(arr);
+		float mean = (float)(StatUtils.mean(arr));
+		float var = (float)(StatUtils.variance(arr));
+		float cov = (float)(Math.sqrt(StatUtils.variance(arr)) / StatUtils.mean(arr));
 		result.add(mean);
 		result.add(var);
 		result.add(cov);
@@ -80,7 +80,7 @@ class LatencyTool {
 
 		StringBuilder res = new StringBuilder(subDir);
 		res.append(windowStr);
-		for (Double d : result) {
+		for (Float d : result) {
 			res.append(" ");
 			res.append(d);
 		}
@@ -88,12 +88,12 @@ class LatencyTool {
 		return res.toString();
 	}
 
-	public double getLatencyByPercent(ArrayList<Double> latList, double percent) {
-		double threPercent = 1.0 * 5 / Math.pow(10, Double.toString(percent).length() - 2 + 1);
+	public float getLatencyByPercent(ArrayList<Float> latList, float percent) {
+		float threPercent = (float)(1.0 * 5 / Math.pow(10, Float.toString(percent).length() - 2 + 1));
 		int latListSize = latList.size();
 		int spos = (int)(latListSize * (percent - threPercent));
 		int epos = (int)(latListSize * (percent + threPercent));
-		double latency = 0;
+		float latency = 0.0f;
 		for (int i = spos; i < epos; i++) {
 			latency += latList.get(i);
 		}
@@ -101,20 +101,20 @@ class LatencyTool {
 		return latency;
 	}
 
-	public void readSwitchInfo(String switchFilePath, String msrFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
+	public void readSwitchInfo(String switchFilePath, String msrFilePath, TreeMap<Float, Float> switchInfo, HashMap<Float, ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
 		File switchFile = new File(switchFilePath);
 		FileReader fr = new FileReader(switchFile);
 		BufferedReader br = new BufferedReader(fr);
 		String line = null;
 
-		ArrayList<Double> stimeList = new ArrayList<>();
-		ArrayList<Double> etimeList = new ArrayList<>();
+		ArrayList<Float> stimeList = new ArrayList<>();
+		ArrayList<Float> etimeList = new ArrayList<>();
 
 		while((line = br.readLine()) != null) {
 			String splitArray[]= line.split(" ");
 			int splitLength = splitArray.length;
-			double stime = Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ;
-			double etime = Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ;
+			float stime = (float)(Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ);
+			float etime = (float)(Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ);
 			stimeList.add(stime);
 			etimeList.add(etime);
 		}
@@ -122,7 +122,7 @@ class LatencyTool {
 		for (int i = 1; i < stimeList.size() - 1; i++) {
 			switchInfo.put(etimeList.get(i - 1), stimeList.get(i));	
 		}
-		switchInfo.put(etimeList.get(etimeList.size() - 1), Double.MAX_VALUE);
+		switchInfo.put(etimeList.get(etimeList.size() - 1), Float.MAX_VALUE);
 
 		File msrFile = new File(msrFilePath);
 		fr = new FileReader(msrFile);
@@ -147,10 +147,10 @@ class LatencyTool {
 		}
 	}
 
-	public void readVarResults(String traceFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
+	public void readVarResults(String traceFilePath, TreeMap<Float, Float> switchInfo, HashMap<Float, ArrayList<String>> msrInfo, HashMap<String, FloatListPair> latencyPairs, HashMap<String, FloatListPair> msrPairs) throws FileNotFoundException, IOException {
 		int count = 0;
 		VarResult varResult = null;
-		double switchStartTime = switchInfo.firstKey();
+		float switchStartTime = switchInfo.firstKey();
 
 		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream(traceFilePath)));
 		while (is.available() > 0) {
@@ -168,8 +168,8 @@ class LatencyTool {
 				continue;
 			}
 
-			double switchIdx = -1;
-			Double switchTime = switchInfo.floorKey(varResult.results[12]);
+			float switchIdx = -1.0f;
+			Float switchTime = switchInfo.floorKey(varResult.results[12]);
 			if (switchTime == null) continue;
 			if (varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
 				switchIdx = switchTime;
@@ -198,7 +198,7 @@ class LatencyTool {
 	public void generateLatencyFile() {
 		ArrayList<String> results = new ArrayList<>();
 		for (int i = 0; i < latLists.size(); i++) {
-			ArrayList<Double> latList = latLists.get(i);
+			ArrayList<Float> latList = latLists.get(i);
 			String result = getLatencyInfo(latList, i);
 			results.add(result);
 			System.out.print(result);
@@ -206,7 +206,7 @@ class LatencyTool {
 	}
 
 	public void generateCDFFile() {
-		ArrayList<Double> targetList = latLists.get(CDFIdx);
+		ArrayList<Float> targetList = latLists.get(CDFIdx);
 		Collections.sort(targetList);
 		int total = targetList.size();
 		for (int i = 0; i < total; i++) {
@@ -218,7 +218,7 @@ class LatencyTool {
 		String traceFilePath = args[0];
 		String switchFilePath = args[1];
 		String msrFilePath = args[2];
-		LatencyTool analyzer = new LatencyTool(Double.parseDouble(args[3]));
+		LatencyTool analyzer = new LatencyTool(Float.parseFloat(args[3]));
 		analyzer.subDir = traceFilePath.substring(0, traceFilePath.length() - 12);
 
 		if (args.length > 4) {
@@ -229,10 +229,10 @@ class LatencyTool {
 			analyzer.CDFIdx = Integer.parseInt(args[5]);
 		}
 
-		TreeMap<Double, Double> switchInfo = new TreeMap<>();
-		HashMap<Double, ArrayList<String>> msrInfo = new HashMap<Double, ArrayList<String>>();
-		HashMap<String, DoubleListPair> latencyPairs = new HashMap<String, DoubleListPair>();
-		HashMap<String, DoubleListPair> msrPairs = new HashMap<String, DoubleListPair>();
+		TreeMap<Float, Float> switchInfo = new TreeMap<>();
+		HashMap<Float, ArrayList<String>> msrInfo = new HashMap<Float, ArrayList<String>>();
+		HashMap<String, FloatListPair> latencyPairs = new HashMap<String, FloatListPair>();
+		HashMap<String, FloatListPair> msrPairs = new HashMap<String, FloatListPair>();
 
 		analyzer.readSwitchInfo(switchFilePath, msrFilePath, switchInfo, msrInfo);
 		analyzer.readVarResults(traceFilePath, switchInfo, msrInfo, latencyPairs, msrPairs);

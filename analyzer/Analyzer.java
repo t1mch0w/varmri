@@ -5,58 +5,58 @@ import java.nio.file.*;
 import java.nio.charset.*;
 
 class Analyzer {
-	static double CPUFREQ = 2.2;
+	static float CPUFREQ = 2.2f;
 	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE", "1/FREQ");
 
 	int filterType = -1;
 	//int filterType = 2;
-	double pTarget = 0.99;
-	double pTargetLowerBound = 0.99 - 0.005;
-	double pTargetUpperBound = 0.99 + 0.005;
+	float pTarget = 0.99f;
+	float pTargetLowerBound = 0.99f - 0.005f;
+	float pTargetUpperBound = 0.99f + 0.005f;
 
 	//Used for memory benchmark
-	//double pTarget = 0.25;
-	//double pTargetLowerBound = 0.245;
-	//double pTargetUpperBound = 0.255;
+	//float pTarget = 0.25;
+	//float pTargetLowerBound = 0.245;
+	//float pTargetUpperBound = 0.255;
 
-	double propRSquared = 0.99;
-	double windowLengthInHours = 2;
-	double targetWindow = 0;
+	float propRSquared = 0.99f;
+	float windowLengthInHours = 1;
+	float targetWindow = 0;
 
 	String testName = "";
 
 	HashMap<String, String> regValueToId;
-	HashMap<String, Double> mapInflectionPoints;
-	HashMap<String, Double> impactValueResults;
-	HashMap<String, Double> removedPercentResults;
-	HashMap<String, Double> propRelationResults;
-	HashMap<String, Double> rangeAnalysisResults;
-	HashMap<String, Double> jaccardResults;
-	HashMap<String, Double> curveFittingThresholds;
+	HashMap<String, Float> mapInflectionPoints;
+	HashMap<String, Float> impactValueResults;
+	HashMap<String, Float> removedPercentResults;
+	HashMap<String, Float> propRelationResults;
+	HashMap<String, Float> rangeAnalysisResults;
+	HashMap<String, Float> jaccardResults;
+	HashMap<String, Float> curveFittingThresholds;
 
 	HashMap<String, ArrayList<String>> priorityList;
-	HashMap<String, Double> finalImpactValueResults;
+	HashMap<String, Float> finalImpactValueResults;
 	HashMap<String, String> finalFilteredReasons;
 
-	TreeMap<Double, Double> switchInfo;
-	HashMap<Double, ArrayList<String>> msrInfo;
-	HashMap<String, DoubleListPair> latencyPairs;
-	HashMap<String, DoubleListPair> msrPairs;
+	TreeMap<Float, Float> switchInfo;
+	HashMap<Float, ArrayList<String>> msrInfo;
+	HashMap<String, FloatListPair> latencyPairs;
+	HashMap<String, FloatListPair> msrPairs;
 
-	DoubleList dList;
+	FloatList dList;
 
 	// Debug
 	long startTime;
 	long endTime;
 	
-	public Analyzer(TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) {
+	public Analyzer(TreeMap<Float, Float> switchInfo, HashMap<Float, ArrayList<String>> msrInfo, HashMap<String, FloatListPair> latencyPairs, HashMap<String, FloatListPair> msrPairs) {
 		regValueToId = new HashMap<String, String>();
-		mapInflectionPoints = new HashMap<String, Double>();
-		impactValueResults = new HashMap<String, Double>();
-		removedPercentResults = new HashMap<String, Double>();
-		propRelationResults = new HashMap<String, Double>();
-		rangeAnalysisResults = new HashMap<String, Double>();
-		jaccardResults = new HashMap<String, Double>();
+		mapInflectionPoints = new HashMap<String, Float>();
+		impactValueResults = new HashMap<String, Float>();
+		removedPercentResults = new HashMap<String, Float>();
+		propRelationResults = new HashMap<String, Float>();
+		rangeAnalysisResults = new HashMap<String, Float>();
+		jaccardResults = new HashMap<String, Float>();
 		curveFittingThresholds = new HashMap<>();
 		priorityList = new HashMap<>();
 		finalImpactValueResults = new HashMap<>();
@@ -64,7 +64,7 @@ class Analyzer {
 		startTime = 0;
 		endTime = 0;
 
-		dList = new DoubleList();
+		dList = new FloatList();
 
 		this.switchInfo = switchInfo;
 		this.msrInfo  = msrInfo;
@@ -89,7 +89,7 @@ class Analyzer {
 		}
 	}
 
-	public void readRegValueToId(HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
+	public void readRegValueToId(HashMap<String, FloatListPair> latencyPairs, HashMap<String, FloatListPair> msrPairs) throws FileNotFoundException, IOException {
 		File switchFile = new File("./msrDesc");
 		FileReader fr = new FileReader(switchFile);
 		BufferedReader br = new BufferedReader(fr);
@@ -105,7 +105,7 @@ class Analyzer {
 		}
 
 		for (String eName : regValueToId.keySet()) {
-			latencyPairs.put(eName, new DoubleListPair());
+			latencyPairs.put(eName, new FloatListPair());
 		}
 
 		String msrKey = null;
@@ -118,26 +118,26 @@ class Analyzer {
 					else {
 						msrKey = secondName + "-" + firstName;
 					}
-					msrPairs.put(msrKey, new DoubleListPair());
+					msrPairs.put(msrKey, new FloatListPair());
 				}
 			}
 		}
 	}
 
-	public void readSwitchInfo(String switchFilePath, String msrFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
+	public void readSwitchInfo(String switchFilePath, String msrFilePath, TreeMap<Float, Float> switchInfo, HashMap<Float, ArrayList<String>> msrInfo) throws FileNotFoundException, IOException {
 		File switchFile = new File(switchFilePath);
 		FileReader fr = new FileReader(switchFile);
 		BufferedReader br = new BufferedReader(fr);
 		String line = null;
 
-		ArrayList<Double> stimeList = new ArrayList<>();
-		ArrayList<Double> etimeList = new ArrayList<>();
+		ArrayList<Float> stimeList = new ArrayList<>();
+		ArrayList<Float> etimeList = new ArrayList<>();
 
 		while((line = br.readLine()) != null) {
 			String splitArray[]= line.split(" ");
 			int splitLength = splitArray.length;
-			double stime = Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ;
-			double etime = Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ;
+			float stime = Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ;
+			float etime = Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ;
 			stimeList.add(stime);
 			etimeList.add(etime);
 		}
@@ -145,7 +145,7 @@ class Analyzer {
 		for (int i = 1; i < stimeList.size() - 1; i++) {
 			switchInfo.put(etimeList.get(i - 1), stimeList.get(i));	
 		}
-		switchInfo.put(etimeList.get(etimeList.size() - 1), Double.MAX_VALUE);
+		switchInfo.put(etimeList.get(etimeList.size() - 1), Float.MAX_VALUE);
 
 		File msrFile = new File(msrFilePath);
 		fr = new FileReader(msrFile);
@@ -170,12 +170,12 @@ class Analyzer {
 		}
 	}
 
-	public void readVarResults(String traceFilePath, TreeMap<Double, Double> switchInfo, HashMap<Double, ArrayList<String>> msrInfo, HashMap<String, DoubleListPair> latencyPairs, HashMap<String, DoubleListPair> msrPairs) throws FileNotFoundException, IOException {
+	public void readVarResults(String traceFilePath, TreeMap<Float, Float> switchInfo, HashMap<Float, ArrayList<String>> msrInfo, HashMap<String, FloatListPair> latencyPairs, HashMap<String, FloatListPair> msrPairs) throws FileNotFoundException, IOException {
 		int count = 0;
 		String msrKey = null;
 		String firstName = null;
 		String secondName = null;
-		double switchStartTime = switchInfo.firstKey();
+		float switchStartTime = switchInfo.firstKey();
 		//DataInputStream is = new DataInputStream(new FileInputStream(traceFilePath));
 		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream(traceFilePath)));
 		while (is.available() > 0) {
@@ -194,8 +194,8 @@ class Analyzer {
 				continue;
 			}
 
-			double switchIdx = -1;
-			Double switchTime = switchInfo.floorKey(varResult.results[12]);
+			float switchIdx = -1;
+			Float switchTime = switchInfo.floorKey(varResult.results[12]);
 			if (switchTime == null) continue;
 			if (varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
 				switchIdx = switchTime;
@@ -220,24 +220,24 @@ class Analyzer {
 							eventIdx += 2;
 					}
 				}
-				//latencyPairs.putIfAbsent(eventName.get(eventIdx), new DoubleListPair());
-				DoubleListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
+				//latencyPairs.putIfAbsent(eventName.get(eventIdx), new FloatListPair());
+				FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
 				tmpList.addData(varResult.latency, varResult.results[i]);
 			}
 
 			// Add latency and MSR
 			for (int i = 8; i < 12; i++) {
 				int eventIdx = i - 8;
-				//latencyPairs.putIfAbsent(msrInfo.get(switchIdx).get(eventIdx), new DoubleListPair());
+				//latencyPairs.putIfAbsent(msrInfo.get(switchIdx).get(eventIdx), new FloatListPair());
 				if (msrInfo.get(switchIdx).get(eventIdx).equals("0x000000")) continue;
-				DoubleListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
+				FloatListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
 				if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
 				tmpList.addData(varResult.latency, varResult.results[i]);
 			}
 
 			// Add latency and Freq
-			DoubleListPair freqList = latencyPairs.get("1/FREQ");
-			freqList.addData(varResult.latency, 1.0 / varResult.freq);
+			FloatListPair freqList = latencyPairs.get("1/FREQ");
+			freqList.addData(varResult.latency, 1.0f / varResult.freq);
 
 			// Prepare msrPairs for proportional relationship and jaccard similarity
 			for (int i = 8; i < 11; i++) {
@@ -252,8 +252,8 @@ class Analyzer {
 					else {
 						msrKey = secondName + "-" + firstName;
 					}
-					//msrPairs.putIfAbsent(msrKey, new DoubleListPair());
-					DoubleListPair tmpList = msrPairs.get(msrKey);
+					//msrPairs.putIfAbsent(msrKey, new FloatListPair());
+					FloatListPair tmpList = msrPairs.get(msrKey);
 					tmpList.addData(varResult.results[i], varResult.results[j]);
 				}
 			}
@@ -269,8 +269,8 @@ class Analyzer {
 					if (secondName.equals("0x000000")) continue;
 					firstName = eventName.get(eventIdx);
 					msrKey = secondName + "-" + firstName;
-					//msrPairs.putIfAbsent(msrKey, new DoubleListPair());
-					DoubleListPair tmpList = msrPairs.get(msrKey);
+					//msrPairs.putIfAbsent(msrKey, new FloatListPair());
+					FloatListPair tmpList = msrPairs.get(msrKey);
 					tmpList.addData(varResult.results[i], varResult.results[j]);
 				}
 			}
@@ -285,7 +285,7 @@ class Analyzer {
 	}
 
 	//The first step
-	public HashMap<String, ImpactValue> impactValueAnalysis(HashMap<String, DoubleListPair> latencyPairs) {
+	public HashMap<String, ImpactValue> impactValueAnalysis(HashMap<String, FloatListPair> latencyPairs) {
 		//long stime = System.nanoTime();
 		HashMap<String, ImpactValue> ivMap = new HashMap<>();
 		for (String key : latencyPairs.keySet()) {
@@ -308,7 +308,7 @@ class Analyzer {
 	}
 
 	//The second step
-	public HashMap<String, PropRelation> propRelationshipAnalysis(HashMap<String, DoubleListPair> msrPairs) {
+	public HashMap<String, PropRelation> propRelationshipAnalysis(HashMap<String, FloatListPair> msrPairs) {
 		//long stime = System.nanoTime();
 		HashMap<String, PropRelation> prMap = new HashMap<>();
 		for (String key : msrPairs.keySet()) {		
@@ -342,23 +342,23 @@ class Analyzer {
 
 	public void generateLatencyResults() throws IOException {
 		FileWriter fileWriter = new FileWriter(testName + "_latency.txt");
-		double[] percentList = {0.999, 0.99, 0.5};
-		for (double percent : percentList) {
+		float[] percentList = {0.999f, 0.99f, 0.5f};
+		for (float percent : percentList) {
 			fileWriter.write(String.format("P%.2f %f\n", percent*100, dList.getResult(percent)));
 		}
 		fileWriter.close();
 	}
 
 	//The third step
-	public HashMap<String, JaccardAnalysis> jaccardAnalysis(HashMap<String, DoubleListPair> msrPairs) {
+	public HashMap<String, JaccardAnalysis> jaccardAnalysis(HashMap<String, FloatListPair> msrPairs) {
 		//long stime = System.nanoTime();
 		HashMap<String, JaccardAnalysis> jaMap = new HashMap<>();
 
 		for (String key : msrPairs.keySet()) {
 			if (msrPairs.get(key).size() == 0) continue;
 			String[] keySet = key.split("-");
-			double thre0 = curveFittingThresholds.get(keySet[0]);
-			double thre1 = curveFittingThresholds.get(keySet[1]);
+			float thre0 = curveFittingThresholds.get(keySet[0]);
+			float thre1 = curveFittingThresholds.get(keySet[1]);
 			JaccardAnalysis ja = new JaccardAnalysis(msrPairs.get(key), thre0, thre1);
 			ja.start();
 			jaMap.put(key, ja);
@@ -370,7 +370,7 @@ class Analyzer {
 	}
 
 	//Range Analysis
-	public HashMap<String, RangeAnalysis> rangeAnalysis(HashMap<String, DoubleListPair> latencyPairs) {
+	public HashMap<String, RangeAnalysis> rangeAnalysis(HashMap<String, FloatListPair> latencyPairs) {
 		HashMap<String, RangeAnalysis> rMap = new HashMap<>();
 		for (String key : latencyPairs.keySet()) {
 			RangeAnalysis r = new RangeAnalysis(latencyPairs.get(key), pTargetLowerBound, pTargetUpperBound);
@@ -458,7 +458,7 @@ class Analyzer {
 					msrKey = secondKey + "-" + firstKey;
 				}
 				if (propRelationResults.containsKey(msrKey) && propRelationResults.get(msrKey) >= propRSquared) {
-					finalImpactValueResults.put(firstKey, 0.0);
+					finalImpactValueResults.put(firstKey, 0.0f);
 					finalFilteredReasons.put(firstKey, String.format("Proportional to %s(%s)", regValueToId.get(secondKey), secondKey));
 					break;
 				}
@@ -468,8 +468,8 @@ class Analyzer {
 		// Check jaccard similarity
 		for (String firstKey : priorityList.keySet()) {
 			String maxKey = null;
-			double maxValue = 0.0;
-			double maxJaccard = 0.0;
+			float maxValue = 0.0f;
+			float maxJaccard = 0.0f;
 			ArrayList<String> checkedList = new ArrayList<>();
 			// Already removed by the proportional relationship
 			if (finalImpactValueResults.containsKey(firstKey)) continue;
@@ -497,7 +497,7 @@ class Analyzer {
 				}
 			}
 
-			double firstValue = impactValueResults.get(firstKey);
+			float firstValue = impactValueResults.get(firstKey);
 			for (String secondKey : checkedList) {
 				if (firstKey.compareTo(secondKey) < 0) {
 					msrKey = firstKey + "-" + secondKey;
@@ -508,7 +508,7 @@ class Analyzer {
 				// No jaccard similarity, continue
 				if (!jaccardResults.containsKey(msrKey)) continue;
 
-				double tmpValue = jaccardResults.get(msrKey) * impactValueResults.get(secondKey);
+				float tmpValue = jaccardResults.get(msrKey) * impactValueResults.get(secondKey);
 				if (tmpValue > maxValue) {
 					maxKey = secondKey;
 					maxValue = tmpValue;
@@ -525,7 +525,7 @@ class Analyzer {
 		// Final output
 		FileWriter fileWriter = new FileWriter(testName + "_final_result.txt");
 		for (String key : impactValueResults.keySet()) {
-			double finalRes = impactValueResults.get(key);
+			float finalRes = impactValueResults.get(key);
 			String filteredReason =	"N/A";
 			if (finalImpactValueResults.containsKey(key)) {
 				finalRes = finalImpactValueResults.get(key);
@@ -553,15 +553,15 @@ class Analyzer {
 		long stime = 0;
 		long etime = 0;
 
-		TreeMap<Double, Double> switchInfo = new TreeMap<>();
-		HashMap<Double, ArrayList<String>> msrInfo = new HashMap<Double, ArrayList<String>>();
-		HashMap<String, DoubleListPair> latencyPairs = new HashMap<String, DoubleListPair>();
-		HashMap<String, DoubleListPair> msrPairs = new HashMap<String, DoubleListPair>();
+		TreeMap<Float, Float> switchInfo = new TreeMap<>();
+		HashMap<Float, ArrayList<String>> msrInfo = new HashMap<Float, ArrayList<String>>();
+		HashMap<String, FloatListPair> latencyPairs = new HashMap<String, FloatListPair>();
+		HashMap<String, FloatListPair> msrPairs = new HashMap<String, FloatListPair>();
 	
 		Analyzer analyzer = new Analyzer(switchInfo, msrInfo,latencyPairs, msrPairs);
 		if (args.length > 3) {
-			analyzer.pTarget = Double.parseDouble(args[3]);
-			double threPercent = 1.0 * 5 / Math.pow(10, Double.toString(analyzer.pTarget).length() - 2 + 1);
+			analyzer.pTarget = Float.parseFloat(args[3]);
+			float threPercent = (float)(1.0 * 5 / Math.pow(10, Float.toString(analyzer.pTarget).length() - 2 + 1));
 			analyzer.pTargetLowerBound = analyzer.pTarget - threPercent;
 			analyzer.pTargetUpperBound = analyzer.pTarget + threPercent;
 			System.out.println("analyzer.pTargetLowerBound = " + analyzer.pTargetLowerBound);
@@ -575,12 +575,12 @@ class Analyzer {
 
 		// Window length in hours
 		if (args.length > 5) {
-			analyzer.windowLengthInHours = Double.parseDouble(args[5]);
+			analyzer.windowLengthInHours = Float.parseFloat(args[5]);
 		}
 
 		// Target window
 		if (args.length > 6) {
-			analyzer.targetWindow = Double.parseDouble(args[6]);
+			analyzer.targetWindow = Float.parseFloat(args[6]);
 		}
 
 		analyzer.getTestName(traceFilePath);

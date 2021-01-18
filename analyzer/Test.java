@@ -7,7 +7,7 @@ import java.nio.charset.*;
 
 class Test{
 	public static void main(String args[]) throws IOException {
-		DoubleListPair pairs = new DoubleListPair();	
+		FloatListPair pairs = new FloatListPair();	
 		File latencyFile = new File(args[0]);
 		FileReader fr = new FileReader(latencyFile);
 		BufferedReader br = new BufferedReader(fr);
@@ -15,8 +15,8 @@ class Test{
 
 		while((line = br.readLine()) != null) {
 			String splitArray[]= line.split(" ");
-			double first = Double.parseDouble(splitArray[0]);
-			double second = Double.parseDouble(splitArray[1]);
+			float first = Float.parseFloat(splitArray[0]);
+			float second = Float.parseFloat(splitArray[1]);
 			pairs.addData(first, second);
 		}
 
@@ -25,12 +25,12 @@ class Test{
 		int numOfBins = 1000;
 		int numOfPoints = (int)Math.ceil(1.0 * total / numOfBins);
 
-		double lastSlope = 1.0;
-		double currSlope = 0.0;
+		float lastSlope = 1.0;
+		float currSlope = 0.0;
 		for (int spos = 0 ; spos < total; spos += numOfPoints) {
 			int epos = spos + numOfPoints > total ? total : spos + numOfPoints;
 			//System.out.println(spos + " " + epos + " " + numOfPoints);
-			double[][] tmpArray = pairs.getDoubleArray(0, spos, epos);
+			float[][] tmpArray = pairs.getFloatArray(0, spos, epos);
 			CurveFit cf = new CurveFit();
 			cf.fit(tmpArray);
 			lastSlope = currSlope;

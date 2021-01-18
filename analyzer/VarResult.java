@@ -6,17 +6,17 @@ import java.nio.charset.*;
 
 class VarResult {
 	static int NUM_VAR = 14;
-	static double TIME_FREQ = 2.2;
+	static float TIME_FREQ = 2.2f;
 	int threadId;
 	long reqId;
 	long event;
 	int type;
 	short bitmap;
 
-	double runningLength;
-	double results[] = new double[NUM_VAR];
-	double latency;
-	double freq;
+	float runningLength;
+	float results[] = new float[NUM_VAR];
+	float latency;
+	float freq;
 
 	public VarResult() {
 	}
@@ -63,7 +63,7 @@ class VarResult {
 		//this.runningLength = latency - results[0] - results[1] - results[2] - results[3] - results[4];
 		this.runningLength = results[13] - results[2] - results[3] - results[4] - results[5];
 		//this.freq = 1.0 * results[7] / this.runningLength;
-		this.freq = 1.0 * results[7] / this.runningLength;
+		this.freq = (float)(1.0 * results[7] / this.runningLength);
 	}
 
 	public String toString() {
@@ -92,8 +92,8 @@ class VarResult {
 		return sb.toString();
 	}
 
-	public List<Double> toList() {
-		List<Double> res = new ArrayList<>();
+	public List<Float> toList() {
+		List<Float> res = new ArrayList<>();
 		res.add(latency);
 		res.add(runningLength);
 		for (int i = 0; i < NUM_VAR; i++) {

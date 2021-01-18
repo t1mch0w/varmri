@@ -5,12 +5,12 @@ public class CDFAnalyzer {
 
     // [][0]: x
     // [][1]: y
-    private final double[][] allData;
-    private double R2Threshold;
+    private final float[][] allData;
+    private float R2Threshold;
     private int numInitIntervals;
-    private final double initR2Threshold;
-    private List<Double> turningPointsX;
-    private List<Double> turningPointsY;
+    private final float initR2Threshold;
+    private List<Float> turningPointsX;
+    private List<Float> turningPointsY;
 
     // These are LENGTH of interval
     private int curInterval;
@@ -26,35 +26,35 @@ public class CDFAnalyzer {
     boolean adjusted;
     boolean ascending;
 
-    double turningPointValue;
-    double turningPointPos;
+    float turningPointValue;
+    float turningPointPos;
     int numOfDataPoints;
 
-    public CDFAnalyzer(double[][] data) {
+    public CDFAnalyzer(float[][] data) {
         // default R2-Threshold: 0.95
         // default number of intervals: 1000
-        this(data, 0.95,1000);
+        this(data, 0.95f, 1000);
     }
 
-    public CDFAnalyzer(double[][] data, double R2threshold){
+    public CDFAnalyzer(float[][] data, float R2threshold){
         // default number of intervals: 1000
-        this(data, R2threshold,1000);
+        this(data, R2threshold, 1000);
     }
 
-    public CDFAnalyzer(double[][] data,int numIntervals){
+    public CDFAnalyzer(float[][] data,int numIntervals){
         // default R2-Threshold: 0.95
-        this(data, 0.95,numIntervals);
+        this(data, 0.95f, numIntervals);
     }
     
 
-    public CDFAnalyzer(double[][] data, double R2threshold,int numIntervals) {
+    public CDFAnalyzer(float[][] data, float R2threshold,int numIntervals) {
         allData = data;
         initR2Threshold = R2threshold;
         R2Threshold = initR2Threshold;
         turningPointsX = new ArrayList<>();
         turningPointsY = new ArrayList<>();
         numInitIntervals = numIntervals;
-	turningPointValue = Double.NaN;
+	turningPointValue = Float.NaN;
 	turningPointPos = data.length - 1;
 	numOfDataPoints = data.length - 1;
     }
@@ -110,20 +110,20 @@ public class CDFAnalyzer {
         start = Math.min(start,end-1);
     }
 
-    public double getTurningPointAt(int lower,int target){
+    public float getTurningPointAt(int lower,int target){
         findWithoutAdjust();
 
-        double maxInRange = -1;
+        float maxInRange = -1;
 
         for(int i=0;i<turningPointsX.size();i++){
-            double point = turningPointsX.get(i);
-            double lat = turningPointsY.get(i);
+            float point = turningPointsX.get(i);
+            float lat = turningPointsY.get(i);
             if (point > lower && point <= target){
 		    turningPointValue = lat;
             maxInRange = Math.max(lat,maxInRange);
 		    turningPointPos = point;
             }
-            else if (Double.isNaN(turningPointValue) && point >= target){
+            else if (Float.isNaN(turningPointValue) && point >= target){
             turningPointValue = lat;
 		    turningPointPos = point;
             if (lat != maxInRange){
@@ -141,7 +141,7 @@ public class CDFAnalyzer {
         return turningPointValue;
     }
 
-    public double getTurningPointPercent() {
+    public float getTurningPointPercent() {
 	    return turningPointPos / numOfDataPoints;
     }
 }
