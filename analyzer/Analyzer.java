@@ -80,7 +80,7 @@ class Analyzer {
 
 		while((line = br.readLine()) != null) {
 			if (line.contains("#")) continue;
-			String splitArray[]= line.split(" ");
+			String splitArray[]= line.toUpperCase().split(" ");
 			ArrayList<String> tmpList = new ArrayList<>();
 			for (int i = 1; i < splitArray.length; i++) {
 					tmpList.add(splitArray[i]);
@@ -96,7 +96,7 @@ class Analyzer {
 		String line;
 
 		while((line = br.readLine()) != null) {
-			String splitArray[]= line.split(" ");
+			String splitArray[]= line.toUpperCase().split(" ");
 			regValueToId.put(splitArray[1], splitArray[0]);
 		}
 		
@@ -134,7 +134,7 @@ class Analyzer {
 		ArrayList<Float> etimeList = new ArrayList<>();
 
 		while((line = br.readLine()) != null) {
-			String splitArray[]= line.split(" ");
+			String splitArray[]= line.toUpperCase().split(" ");
 			int splitLength = splitArray.length;
 			float stime = Long.parseLong(splitArray[splitLength - 2]) / CPUFREQ;
 			float etime = Long.parseLong(splitArray[splitLength - 1]) / CPUFREQ;
@@ -155,7 +155,7 @@ class Analyzer {
 		int msrIdx = 0;
 		while((line = br.readLine()) != null) {
 			if (line.contains("Level")) {
-				String splitArray[]= line.split(" ");
+				String splitArray[]= line.toUpperCase().split(" ");
 				int length = splitArray.length;
 				String level = splitArray[length - 8];
 				String msr = splitArray[length - 6];
