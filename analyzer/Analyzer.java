@@ -275,6 +275,7 @@ class Analyzer {
 				}
 			}
 
+			//System.out.println(varResult.latency);			
 			dList.add(varResult.latency);			
 
 			count++;
