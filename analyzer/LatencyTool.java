@@ -182,20 +182,21 @@ class LatencyTool {
 			//if (switchIdx - switchStartTime >= 3600 * 1e9 * hourWindow) break;
 			// Decide window index and collect latency
 			int windowIdx = (int)((switchIdx - switchStartTime) / (3600 * 1e9 * hourWindow));
-			//latLists.get(windowIdx).add(varResult.latency);
-			//latLists.get(totalWindow).add(varResult.latency);
+			latLists.get(windowIdx).add(varResult.latency);
+			latLists.get(totalWindow).add(varResult.latency);
 
 			//softirq
-			//latLists.get(windowIdx).add(varResult.results[3]);
-			//latLists.get(totalWindow).add(varResult.results[3]);
+			//latLists.get(windowIdx).add(varResult.results[2] + varResult.results[3]);
+			//latLists.get(totalWindow).add(varResult.results[2] + varResult.results[3]);
 			
 			//waiting
-			latLists.get(windowIdx).add(varResult.results[1]);
-			latLists.get(totalWindow).add(varResult.results[1]);
+			//latLists.get(windowIdx).add(varResult.results[1]);
+			//latLists.get(totalWindow).add(varResult.results[1]);
 		}
 	}
 
 	public void generateLatencyFile() {
+		System.out.println("Trace Window Total Top100 P99.99 P99.9 P99 P90 P80 P70 P60 P50 Mean Var CoV");
 		ArrayList<String> results = new ArrayList<>();
 		for (int i = 0; i < latLists.size(); i++) {
 			ArrayList<Float> latList = latLists.get(i);
