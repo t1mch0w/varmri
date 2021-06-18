@@ -6,7 +6,7 @@ import java.nio.charset.*;
 
 class Analyzer {
 	static float CPUFREQ = 2.2f;
-	static List<String> eventName = Arrays.asList("RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE", "1/FREQ");
+	static List<String> eventName = Arrays.asList("RUNNING", "RUNNABLE", "WAITING", "HARDIRQ", "SOFTIRQ", "EXITTOUSER", "MEMMIGRATION", "INST", "CYCLE", "KINST", "KCYCLE", "1/FREQ");
 
 	int filterType = -1;
 	//int filterType = 2;
@@ -213,9 +213,15 @@ class Analyzer {
 
 			// Prepare latencyPairs for impact values
 			// Basic kernel events and fixed PMUs
+			{
+				int eventIdx = 0;
+				FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
+				tmpList.addData(varResult.latency, varResult.runningLength);
+			}
 			for (int i = 0; i < 8; i++) {
-				int eventIdx = i;
-				if (eventIdx >= 6 && eventIdx < 8) {
+				int eventIdx = i + 1;
+				//if (eventIdx >= 6 && eventIdx < 8) {
+				if (eventIdx >= 7 && eventIdx < 9) {
 					if (msrInfo.get(switchIdx).get(4).equals("0")) {
 							eventIdx += 2;
 					}
@@ -259,7 +265,8 @@ class Analyzer {
 			}
 
 			// Prepare pairs between kernel length/CYCLE/INST and MSR
-			for (int i = 0; i < 8; i++) {
+			//for (int i = 0; i < 8; i++) {
+			for (int i = 0; i < 9; i++) {
 				for (int j = 8; j < 12; j++) {
 					int eventIdx = i;
 					if (i >= 6 && msrInfo.get(switchIdx).get(4).equals("0")) {
@@ -609,8 +616,8 @@ class Analyzer {
 		analyzer.generateOutputJaccardResults();
 
 		analyzer.generateLatencyResults();
-
 		analyzer.generateOutputFinals();
+
 		analyzer.endTime = System.nanoTime();
 		System.out.printf("Analysis takes %f seconds\n", (analyzer.endTime - analyzer.startTime) / 1e9);
 	}
