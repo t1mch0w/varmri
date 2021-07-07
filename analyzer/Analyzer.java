@@ -191,8 +191,12 @@ class Analyzer {
 			if (skip == 1 || varResult.latency == 0 || varResult.freq > 4 || varResult.results[7] / varResult.results[6] < 0.001) continue;
 
 			if (filterType != -1 && varResult.type != filterType) {
+				//System.out.println("filterType = " + varResult.type);
 				continue;
 			}
+			//else {
+			//	System.out.println("filterType = " + varResult.type);
+			//}
 
 			float switchIdx = -1;
 			Float switchTime = switchInfo.floorKey(varResult.results[12]);
@@ -283,7 +287,8 @@ class Analyzer {
 			}
 
 			//System.out.println(varResult.latency);			
-			dList.add(varResult.latency);			
+			//dList.add(varResult.latency);			
+			dList.add(varResult.runningLength);
 
 			count++;
 		}

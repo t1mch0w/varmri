@@ -13,6 +13,9 @@ class RangeAnalysis extends Thread {
 	public void run() {
 		int total = 0;
 		int numOfEvent = eventPairs.size();
+		
+		if (numOfEvent == 0) return;
+
 		int startIdx = (int)(pTargetLowerBound * numOfEvent);
 		int endIdx = (int)(pTargetUpperBound * numOfEvent);
 
