@@ -176,19 +176,116 @@ class Analyzer {
 		String firstName = null;
 		String secondName = null;
 		float switchStartTime = switchInfo.firstKey();
+		float switchIdx = -1;
+
+		//Used to calculate the request
+		long nid = -1;
+		float currLatency = 0;
+		ArrayList<VarResult> corrVarResultList = new ArrayList<VarResult>();
 		//DataInputStream is = new DataInputStream(new FileInputStream(traceFilePath));
 		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream(traceFilePath)));
 		while (is.available() > 0) {
 			int skip = 0;
 			VarResult varResult = new VarResult(is);
-            for (int i = 0; i < 14; i++) {
-                if (i == 12) continue;
-                if (varResult.results[i] < 0 || varResult.results[i] > 1e10) {
-                    skip = 1;
-                    break;
-                }
-            }
-			if (skip == 1 || varResult.latency == 0 || varResult.freq > 4 || varResult.results[7] / varResult.results[6] < 0.001) continue;
+
+			//System.out.printf("requestId = %d, type = %d, original latency = %f, currLatency = %f\n", varResult.reqId, varResult.type, varResult.latency, currLatency);
+			if (varResult.reqId != nid) {
+					for (VarResult corrVarResult : corrVarResultList) {
+							Float switchTime = switchInfo.floorKey(varResult.results[12]);
+							if (switchTime == null) continue;
+							if (varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
+									switchIdx = switchTime;
+							}	
+
+							//Update the correct latency
+							//System.out.printf("nid = %d, original latency = %f, currLatency = %f\n", nid, corrVarResult.latency, currLatency);
+							corrVarResult.latency = currLatency;
+
+							// Prepare latencyPairs for impact values
+							// Basic kernel events and fixed PMUs
+							{
+									int eventIdx = 0;
+									FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
+									tmpList.addData(corrVarResult.latency, corrVarResult.runningLength);
+							}
+							for (int i = 0; i < 8; i++) {
+									int eventIdx = i + 1;
+									if (eventIdx >= 7 && eventIdx < 9) {
+											if (msrInfo.get(switchIdx).get(4).equals("0")) {
+													eventIdx += 2;
+											}
+									}
+									//latencyPairs.putIfAbsent(eventName.get(eventIdx), new FloatListPair());
+									FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
+									tmpList.addData(corrVarResult.latency, corrVarResult.results[i]);
+							}
+
+							// Add latency and MSR
+							for (int i = 8; i < 12; i++) {
+									int eventIdx = i - 8;
+									//latencyPairs.putIfAbsent(msrInfo.get(switchIdx).get(eventIdx), new FloatListPair());
+									if (msrInfo.get(switchIdx).get(eventIdx).equals("0x000000")) continue;
+									FloatListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
+									if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
+									tmpList.addData(corrVarResult.latency, corrVarResult.results[i]);
+							}
+
+							// Add latency and Freq
+							FloatListPair freqList = latencyPairs.get("1/FREQ");
+							freqList.addData(corrVarResult.latency, 1.0f / corrVarResult.freq);
+
+							// Prepare msrPairs for proportional relationship and jaccard similarity
+							for (int i = 8; i < 11; i++) {
+									for (int j = i + 1; j < 12; j++) {
+											firstName = msrInfo.get(switchIdx).get(i - 8);
+											secondName = msrInfo.get(switchIdx).get(j - 8);
+											if (firstName.equals("0x000000") || secondName.equals("0x000000")) continue;
+											if (firstName.equals(secondName)) continue;
+											else if (firstName.compareTo(secondName) < 0) {
+													msrKey = firstName + "-" + secondName;
+											}
+											else {
+													msrKey = secondName + "-" + firstName;
+											}
+											//msrPairs.putIfAbsent(msrKey, new FloatListPair());
+											FloatListPair tmpList = msrPairs.get(msrKey);
+											tmpList.addData(corrVarResult.results[i], corrVarResult.results[j]);
+									}
+							}
+
+							// Prepare pairs between kernel length/CYCLE/INST and MSR
+							for (int i = 0; i < 9; i++) {
+									for (int j = 8; j < 12; j++) {
+											int eventIdx = i;
+											if (i >= 6 && msrInfo.get(switchIdx).get(4).equals("0")) {
+													eventIdx += 2;
+											}
+											secondName = msrInfo.get(switchIdx).get(j - 8);
+											if (secondName.equals("0x000000")) continue;
+											firstName = eventName.get(eventIdx);
+											msrKey = secondName + "-" + firstName;
+											//msrPairs.putIfAbsent(msrKey, new FloatListPair());
+											FloatListPair tmpList = msrPairs.get(msrKey);
+											tmpList.addData(corrVarResult.results[i], corrVarResult.results[j]);
+									}
+							}
+							count++;
+					}
+
+				if (currLatency > 0) {
+						dList.add(currLatency);
+				}
+
+				// Update correct nid for the next request
+				nid = varResult.reqId;
+				// Update currLatency
+				currLatency = 0;
+				// Clear corrVarResult list
+				corrVarResultList.clear();
+			}
+
+			// Update the latency
+			currLatency += varResult.latency;
 
 			if (filterType != -1 && varResult.type != filterType) {
 				//System.out.println("filterType = " + varResult.type);
@@ -198,7 +295,15 @@ class Analyzer {
 			//	System.out.println("filterType = " + varResult.type);
 			//}
 
-			float switchIdx = -1;
+            for (int i = 0; i < 14; i++) {
+                if (i == 12) continue;
+                if (varResult.results[i] < 0 || varResult.results[i] > 1e10) {
+                    skip = 1;
+                    break;
+                }
+            }
+			if (skip == 1 || varResult.latency == 0 || varResult.freq > 4 || varResult.results[7] / varResult.results[6] < 0.001) continue;
+		
 			Float switchTime = switchInfo.floorKey(varResult.results[12]);
 			if (switchTime == null) continue;
 			if (varResult.results[12] + varResult.latency <= switchInfo.get(switchTime)) {
@@ -215,82 +320,8 @@ class Analyzer {
 			}
 			if (startTime == 0) startTime = System.nanoTime();
 
-			// Prepare latencyPairs for impact values
-			// Basic kernel events and fixed PMUs
-			{
-				int eventIdx = 0;
-				FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
-				tmpList.addData(varResult.latency, varResult.runningLength);
-			}
-			for (int i = 0; i < 8; i++) {
-				int eventIdx = i + 1;
-				//if (eventIdx >= 6 && eventIdx < 8) {
-				if (eventIdx >= 7 && eventIdx < 9) {
-					if (msrInfo.get(switchIdx).get(4).equals("0")) {
-							eventIdx += 2;
-					}
-				}
-				//latencyPairs.putIfAbsent(eventName.get(eventIdx), new FloatListPair());
-				FloatListPair tmpList = latencyPairs.get(eventName.get(eventIdx));
-				tmpList.addData(varResult.latency, varResult.results[i]);
-			}
-
-			// Add latency and MSR
-			for (int i = 8; i < 12; i++) {
-				int eventIdx = i - 8;
-				//latencyPairs.putIfAbsent(msrInfo.get(switchIdx).get(eventIdx), new FloatListPair());
-				if (msrInfo.get(switchIdx).get(eventIdx).equals("0x000000")) continue;
-				FloatListPair tmpList = latencyPairs.get(msrInfo.get(switchIdx).get(eventIdx));
-				if (tmpList == null) System.out.println(msrInfo.get(switchIdx).get(eventIdx));
-				tmpList.addData(varResult.latency, varResult.results[i]);
-			}
-
-			// Add latency and Freq
-			FloatListPair freqList = latencyPairs.get("1/FREQ");
-			freqList.addData(varResult.latency, 1.0f / varResult.freq);
-
-			// Prepare msrPairs for proportional relationship and jaccard similarity
-			for (int i = 8; i < 11; i++) {
-				for (int j = i + 1; j < 12; j++) {
-					firstName = msrInfo.get(switchIdx).get(i - 8);
-					secondName = msrInfo.get(switchIdx).get(j - 8);
-					if (firstName.equals("0x000000") || secondName.equals("0x000000")) continue;
-					if (firstName.equals(secondName)) continue;
-					else if (firstName.compareTo(secondName) < 0) {
-						msrKey = firstName + "-" + secondName;
-					}
-					else {
-						msrKey = secondName + "-" + firstName;
-					}
-					//msrPairs.putIfAbsent(msrKey, new FloatListPair());
-					FloatListPair tmpList = msrPairs.get(msrKey);
-					tmpList.addData(varResult.results[i], varResult.results[j]);
-				}
-			}
-
-			// Prepare pairs between kernel length/CYCLE/INST and MSR
-			//for (int i = 0; i < 8; i++) {
-			for (int i = 0; i < 9; i++) {
-				for (int j = 8; j < 12; j++) {
-					int eventIdx = i;
-					if (i >= 6 && msrInfo.get(switchIdx).get(4).equals("0")) {
-							eventIdx += 2;
-					}
-					secondName = msrInfo.get(switchIdx).get(j - 8);
-					if (secondName.equals("0x000000")) continue;
-					firstName = eventName.get(eventIdx);
-					msrKey = secondName + "-" + firstName;
-					//msrPairs.putIfAbsent(msrKey, new FloatListPair());
-					FloatListPair tmpList = msrPairs.get(msrKey);
-					tmpList.addData(varResult.results[i], varResult.results[j]);
-				}
-			}
-
-			//System.out.println(varResult.latency);			
-			//dList.add(varResult.latency);			
-			dList.add(varResult.runningLength);
-
-			count++;
+			// If the varResult is the target one, add it into the list.
+			corrVarResultList.add(varResult);
 		}
 		endTime = System.nanoTime();
 		System.out.printf("Parsing takes %f seconds\n", (endTime - startTime) / 1e9);
