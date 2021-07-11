@@ -1,0 +1,7 @@
+grep RUNNING $1/type*/*final* -r | awk -F"," '{print $5}'
+grep WAITING $1/type*/*final* -r | awk -F"," '{print $5}'
+grep RUNNABLE $1/type*/*final* -r | awk -F"," '{print $5}'
+grep HARDIRQ $1/type*/*final* -r | awk -F"," '{print $5}'
+grep SOFTIRQ $1/type*/*final* -r | awk -F"," '{print $5}'
+grep MEMMIGRATION $1/type*/*final* -r | awk -F"," '{print $5}'
+grep EXIT $1/type*/*final* -r | awk -F"," '{print $5}'
